@@ -14,12 +14,37 @@ const TYPE_EMOJI_MAP = {
   'bar': '🍻'
 };
 
-export default function CustomerReviewPage({ slug }) {
-  // Synchronously look up the business from local configuration
-  const localBiz = useMemo(() => getBusinessBySlug(slug), [slug]);
+/**
+ * Attempt to build a business object directly from URL query params.
+ * This is the primary source when a QR is scanned on a fresh phone.
+ * Expected params: ?name=Royal%20Cafe&google=<encoded-google-url>
+ */
+function businessFromUrl() {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('name');
+  const google = params.get('google');
+  if (!name || !google) return null;
+  return {
+    name,
+    googleReviewUrl: google,
+    // type is not encoded in the URL; omit it (page still renders fine without it)
+    type: null,
+  };
+}
 
-  const [business, setBusiness] = useState(localBiz);
-  const [loading, setLoading] = useState(!localBiz);
+export default function CustomerReviewPage({ slug }) {
+  // 1. URL params — set when QR is scanned (works on any phone, no localStorage needed)
+  const urlBusiness = useMemo(() => businessFromUrl(), []);
+
+  // 2. localStorage / preset fallback
+  const localBiz = useMemo(
+    () => (urlBusiness ? null : getBusinessBySlug(slug)),
+    [slug, urlBusiness]
+  );
+
+  const [business, setBusiness] = useState(urlBusiness || localBiz);
+  const [loading, setLoading] = useState(!urlBusiness && !localBiz);
   const [error, setError] = useState(null);
 
   const [rating, setRating] = useState(0);
@@ -31,15 +56,26 @@ export default function CustomerReviewPage({ slug }) {
 
   // Sync with backend API to catch any runtime configuration updates
   useEffect(() => {
-    // Reset state when navigating between different business slugs
-    const found = getBusinessBySlug(slug);
-    setBusiness(found);
-    setLoading(!found);
-    setError(null);
+    // Reset review-interaction state when navigating to a different business
     setRating(0);
     setSelectedAspects([]);
     setSpecificFeedback('');
     setUserEditedReview(null);
+
+    // URL params are the authoritative source — no network call needed
+    const fromUrl = businessFromUrl();
+    if (fromUrl) {
+      setBusiness(fromUrl);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Fallback: localStorage / preset
+    const found = getBusinessBySlug(slug);
+    setBusiness(found);
+    setLoading(!found);
+    setError(null);
 
     async function fetchLatestBusiness() {
       // If business was created/customized in localStorage, prioritize it

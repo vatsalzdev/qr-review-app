@@ -4,12 +4,14 @@ import DevPortal from './pages/DevPortal';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(
-    typeof window !== 'undefined' ? window.location.pathname : '/'
+    typeof window !== 'undefined'
+      ? window.location.pathname + window.location.search
+      : '/'
   );
 
   useEffect(() => {
     const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
+      setCurrentPath(window.location.pathname + window.location.search);
     };
 
     // Global link click handler for instant SPA navigation
@@ -25,8 +27,9 @@ export default function App() {
         const targetPath = anchor.pathname;
         if (targetPath.startsWith('/r/') || targetPath === '/') {
           e.preventDefault();
-          window.history.pushState(null, '', targetPath);
-          setCurrentPath(targetPath);
+          // Preserve query string (e.g. ?name=…&google=…) so params survive navigation
+          window.history.pushState(null, '', targetPath + anchor.search);
+          setCurrentPath(targetPath + anchor.search);
           window.scrollTo(0, 0);
         }
       }

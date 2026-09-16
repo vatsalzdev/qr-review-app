@@ -67,8 +67,16 @@ export default function DevPortal() {
     }
   };
 
+  // Build a self-contained customer URL: business data is embedded as query params
+  // so any phone scanning the QR can load the page without localStorage.
   const customerUrl = activeBusiness && currentOrigin
-    ? `${currentOrigin}/r/${activeBusiness.slug}`
+    ? (() => {
+        const params = new URLSearchParams({
+          name: activeBusiness.name,
+          google: activeBusiness.googleReviewUrl,
+        });
+        return `${currentOrigin}/r/${activeBusiness.slug}?${params.toString()}`;
+      })()
     : '';
 
   const handleDownloadQR = () => {
