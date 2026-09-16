@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
 import { generateReview, formatAspects, formatCustomNote } from '../client/src/services/reviewGenerator.js';
+import { generateSlug } from '../client/src/utils/slugify.js';
 import { getBusinessBySlug, getAllBusinesses } from '../server/data/businesses.js';
 
 console.log('🧪 Running Test Suite for Multi-Business QR Restaurant Review App...\n');
+
+// 0. Test Slug Generation
+console.log('0. Testing Slug Generation...');
+assert.equal(generateSlug('Royal Cafe'), 'royal-cafe');
+assert.equal(generateSlug("Bob's Waffle Shop"), 'bobs-waffle-shop');
+assert.equal(generateSlug('Fresh Mart Jaipur'), 'fresh-mart-jaipur');
+assert.equal(generateSlug('  Special & Unique @ Place! '), 'special-unique-place');
+console.log('  ✓ Slug generator converts business names to clean URL slugs');
 
 // 1. Test Business Data Store
 console.log('1. Testing Business Data Store...');

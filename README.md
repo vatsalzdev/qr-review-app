@@ -1,68 +1,39 @@
 # Minimal Mobile-First QR Restaurant Review Web App
 
-A clean, mobile-first web app that supports **multiple businesses using a single reusable customer interface**.
-
-Customers scan a QR code at any business, pick a star rating, select highlights or enter feedback, automatically generate an authentic review draft, copy it to their clipboard with one tap, and jump straight to that business's Google review page.
+A minimal, mobile-first web app that allows businesses to instantly create review QR codes, and customers to submit authentic, factual Google reviews with a single click.
 
 ---
 
-## Supported Businesses & Dynamic Routing
+## Features & Flows
 
-All businesses share the exact same reusable customer review interface:
+### 1. Business + QR Creation (`/`)
+- **Header**: Create Your Review QR
+- **Inputs**:
+  - Business Name (e.g. `Royal Cafe`, `Bob's Waffle Shop`, `Fresh Mart Jaipur`)
+  - Google Review URL
+- **Automatic Slug Generation**:
+  - Automatically converts business names to clean URL-safe slugs (`royal-cafe`, `bobs-waffle-shop`, `fresh-mart-jaipur`).
+- **Dynamic Customer URL**:
+  - Formed using current browser origin: `https://<current-host>/r/:businessSlug` (no hardcoded hosts).
+- **Large Scannable QR Code**:
+  - Encodes the complete customer URL (never the raw Google review link).
+  - Renders inside a clean, screenshot-ready card frame.
+- **Actions**:
+  - **Download QR**: Exports a crisp PNG image (`<slug>-qr.png`).
+  - **Copy URL**: Copies the customer review URL to clipboard.
+- **Persistence**:
+  - Stored in browser `localStorage` (`qr_review_custom_businesses`) surviving page refreshes without requiring a database.
 
-| Business Name | Type | URL Route |
-| :--- | :--- | :--- |
-| **Demo Waffle Shop** | Waffle Shop | `/r/demo-waffle-shop` |
-| **Royal Cafe** | Cafe | `/r/royal-cafe` |
-| **Fresh Mart** | Grocery Store | `/r/fresh-mart` |
-| **XYZ Bar** | Cocktail Bar | `/r/xyz-bar` |
-
-The Developer & QR page at `/` automatically renders scannable QR codes for each business with their complete customer URL.
-
----
-
-## Business Configuration
-
-All businesses are configured in a clean local JavaScript configuration file (`server/data/businesses.js` and `client/src/data/businesses.js`):
-
-```js
-export const businesses = {
-  "demo-waffle-shop": {
-    name: "Demo Waffle Shop",
-    type: "waffle shop",
-    googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4"
-  },
-
-  "royal-cafe": {
-    name: "Royal Cafe",
-    type: "cafe",
-    googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJ3S4Uqc-uEmsRpdAnqj1k58s"
-  },
-
-  "fresh-mart": {
-    name: "Fresh Mart",
-    type: "grocery store",
-    googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJyeZ2_D-vEmsRLXo7H7P5v5Q"
-  },
-
-  "xyz-bar": {
-    name: "XYZ Bar",
-    type: "cocktail bar",
-    googleReviewUrl: "https://search.google.com/local/writereview?placeid=ChIJdd4hrwug2EcRmSrV3Vo6llI"
-  }
-};
-```
-
----
-
-## Core User Flow (Unchanged)
-
-1. **Scan QR / Open URL**: Customer opens `/r/:businessSlug`.
-2. **Interactive Rating**: "How was your experience at [Business Name]?" with 5 large stars.
-3. **Experience Highlights**: "What did you like?" with multi-select pills (Food, Service, Ambience, Price, Cleanliness) and optional text note.
-4. **Factual Review Generation**: Deterministic template built solely from customer input without hallucinated facts.
-5. **1-Tap Copy**: "Copy Review" button changes to "Copied ✓".
-6. **Google Review Redirect**: "Leave Google Review →" opens that business's specific Google review URL in a new tab.
+### 2. Customer Review Flow (`/r/:businessSlug`)
+- **Mobile-first touch interface**: Clean white/light theme with 48px+ touch targets.
+- **Dynamic Greeting**: *"How was your experience at [Business Name]?"*
+- **Star Rating**: 5 large empty stars `☆ ☆ ☆ ☆ ☆` with interactive highlighting.
+- **Experience Highlights**: Multi-select pills (`Food`, `Service`, `Ambience`, `Price`, `Cleanliness`) + optional note.
+- **Deterministic Draft Generator**: Generates natural review drafts based strictly and purely on customer inputs without hallucinated facts.
+- **Editable Draft**: Textarea remains editable before submission.
+- **Unified Action**: **"Copy & Leave Review →"**
+  - Direct click copies review text to clipboard and opens the business's Google review URL in a new tab.
+  - Subtle helper text: *"Your review has been copied. Paste it on Google and submit your rating."*
 
 ---
 
@@ -72,21 +43,21 @@ export const businesses = {
 ```bash
 npm run dev
 ```
-- Express backend: `http://localhost:5000`
-- Vite frontend: `http://localhost:5173`
+- Frontend runs at `http://localhost:5173`
+- Backend API runs at `http://localhost:5000`
 
-### 2. Run Production Server
+### 2. Run Production Build
 ```bash
 npm run build
 npm start
 ```
-- Express serves both the REST API and the built React frontend at `http://localhost:5000`.
+- Full-stack production server at `http://localhost:5000`
 
-### 3. Run Tests
+### 3. Run Automated Tests
 ```bash
 # Run unit & API integration tests
 npm test
 
-# Run end-to-end multi-business browser test
+# Run 10-step end-to-end browser test
 npm run test:e2e
 ```

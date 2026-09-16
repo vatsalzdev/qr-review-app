@@ -3,7 +3,7 @@ import StarRating from '../components/StarRating';
 import ExperienceSelection from '../components/ExperienceSelection';
 import ReviewDraft from '../components/ReviewDraft';
 import { generateReview } from '../services/reviewGenerator';
-import { getBusinessBySlug } from '../data/businesses';
+import { getBusinessBySlug, getStoredCustomBusinesses } from '../data/businesses';
 
 const TYPE_EMOJI_MAP = {
   'waffle shop': '🧇',
@@ -42,6 +42,13 @@ export default function CustomerReviewPage({ slug }) {
     setUserEditedReview(null);
 
     async function fetchLatestBusiness() {
+      // If business was created/customized in localStorage, prioritize it
+      const custom = getStoredCustomBusinesses();
+      if (custom[slug.toLowerCase()]) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`/api/businesses/${slug}`);
         if (!res.ok) {

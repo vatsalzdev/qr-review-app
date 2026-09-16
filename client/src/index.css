@@ -498,238 +498,372 @@ body {
    ========================================================================== */
 
 .dev-portal-container {
-  max-width: 1080px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 32px 20px 60px;
-}
-
-.dev-header {
-  text-align: center;
-  margin-bottom: 36px;
-}
-
-.dev-logo-row {
+  padding: 24px 16px 64px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.dev-logo-icon {
-  font-size: 32px;
-}
-
-.dev-header h1 {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
-}
-
-.dev-header-desc {
-  font-size: 16px;
-  color: var(--text-secondary);
-}
-
-.dev-businesses-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  flex-direction: column;
   gap: 24px;
 }
 
-@media (min-width: 640px) {
-  .dev-businesses-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .dev-businesses-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.dev-card {
+/* 1. Create QR Card */
+.create-qr-card {
   background: #ffffff;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
-  padding: 24px 20px;
+  padding: 32px 24px;
   box-shadow: var(--shadow-card);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
 }
 
-.dev-card-header {
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 14px;
+.create-qr-header {
+  margin-bottom: 24px;
+  text-align: center;
 }
 
-.biz-header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.biz-emoji {
-  font-size: 28px;
-}
-
-.business-type-badge {
+.create-badge {
+  display: inline-block;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #2563eb;
   background-color: #eff6ff;
-  padding: 3px 9px;
+  padding: 4px 12px;
   border-radius: var(--radius-full);
+  margin-bottom: 10px;
 }
 
-.biz-name {
-  font-size: 20px;
-  font-weight: 700;
+.create-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.biz-route-tag code {
-  font-family: monospace;
-  font-size: 13px;
-  color: #0284c7;
-  background-color: #f0f9ff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.qr-preview-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 14px;
-  padding: 12px 0 20px;
-}
-
-.qr-box {
-  background: #ffffff;
-  padding: 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-sm);
-  display: inline-flex;
-}
-
-.qr-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.direct-link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 11px 16px;
-  background-color: #0f172a;
-  color: #ffffff;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  font-weight: 600;
+.create-subtitle {
   font-size: 14px;
-  transition: background-color 0.2s ease;
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin: 0 auto;
 }
 
-.direct-link-btn:hover {
-  background-color: #1e293b;
+.create-qr-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.qr-url-text {
-  font-family: monospace;
-  font-size: 11px;
-  color: #64748b;
-  word-break: break-all;
-}
-
-.config-section {
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 16px;
-  margin-top: 8px;
-}
-
-.config-form {
+.form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.config-form label {
-  font-size: 12px;
+.form-label {
+  font-size: 14px;
   font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 16px;
+  font-family: inherit;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.slug-preview {
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
-.input-group {
-  display: flex;
-  gap: 6px;
+.slug-preview code {
+  color: #2563eb;
+  font-weight: 600;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.config-input {
-  flex: 1;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: inherit;
+.btn-generate-qr {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  min-height: 52px;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.btn-generate-qr:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+}
+
+.btn-generate-qr:active {
+  transform: scale(0.98);
+}
+
+/* 2. Generated Result Card */
+.generated-result-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  padding: 32px 24px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.result-meta-header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 18px;
+}
+
+.result-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label-muted {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.result-business-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.customer-url-box {
+  background: #f8fafc;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-}
-
-.config-input:focus {
-  outline: none;
-  border-color: var(--border-focus);
-}
-
-.config-save-btn {
   padding: 8px 12px;
-  background-color: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: var(--radius-sm);
+  word-break: break-all;
+}
+
+.customer-url-link {
+  font-family: monospace;
+  font-size: 14px;
+  color: #2563eb;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.customer-url-link:hover {
+  text-decoration: underline;
+}
+
+/* Screenshot-Ready Printable Card */
+.qr-presentation-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.printable-qr-frame {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  max-width: 320px;
+  width: 100%;
+}
+
+.qr-print-banner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.print-brand-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.print-tagline {
   font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.qr-canvas-holder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  padding: 4px;
+}
+
+.qr-canvas-holder canvas {
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.qr-url-footer {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  word-break: break-all;
+  text-align: center;
+}
+
+.screenshot-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Action Buttons Grid */
+.result-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .result-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-secondary-action {
+  background-color: #f8fafc;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-subtle);
+  min-height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   cursor: pointer;
-  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
-.config-save-btn:hover {
-  background-color: #e2e8f0;
+.btn-secondary-action:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
-.quick-links-row {
+.btn-secondary-action.btn-action-copied {
+  background-color: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+
+.btn-primary-launch {
+  grid-column: 1 / -1;
+  background-color: #0f172a;
+  color: #ffffff;
+  min-height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary-launch:hover {
+  background-color: #1e293b;
+}
+
+/* 3. Available Businesses Pills */
+.saved-businesses-section {
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.section-title-sm {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.business-pills-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.direct-link-pill {
-  display: inline-block;
+.history-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
-  font-size: 13px;
-  color: #1e293b;
-  font-weight: 500;
-  text-decoration: none;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.direct-link-pill:hover {
+.history-pill-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.history-pill-btn.history-pill-active {
   background-color: #eff6ff;
   border-color: #3b82f6;
+}
+
+.history-pill-btn .pill-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.history-pill-btn .pill-slug {
+  font-size: 11px;
+  font-family: monospace;
   color: #2563eb;
 }
 

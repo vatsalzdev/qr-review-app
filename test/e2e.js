@@ -21,11 +21,11 @@ app.use((req, res, next) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
-const PORT = 5101;
+const PORT = 5102;
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
 const server = app.listen(PORT, async () => {
-  console.log(`🌐 Server running for Multi-Business E2E tests at http://localhost:${PORT}`);
+  console.log(`🌐 Server running for Business + QR Creation E2E tests at http://localhost:${PORT}`);
   let browser;
 
   try {
@@ -36,98 +36,62 @@ const server = app.listen(PORT, async () => {
     });
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await page.setViewport({ width: 412, height: 915, isMobile: true, hasTouch: true });
 
-    // Step 1: Check Developer Portal displays all businesses & QR codes
-    console.log('\nStep 1: Testing Developer Portal with Multiple Businesses...');
+    // Open Developer Page /
+    console.log('\nNavigating to Developer Page /...');
     await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle0' });
 
-    const waffleCard = await page.$('#card-demo-waffle-shop');
-    const cafeCard = await page.$('#card-royal-cafe');
-    const martCard = await page.$('#card-fresh-mart');
+    // Step 1: Create "Royal Cafe"
+    console.log('Step 1: Entering business name "Royal Cafe"...');
+    await page.waitForSelector('#business-name');
+    await page.type('#business-name', 'Royal Cafe');
 
-    assert(waffleCard !== null, 'Demo Waffle Shop card should exist');
-    assert(cafeCard !== null, 'Royal Cafe card should exist');
-    assert(martCard !== null, 'Fresh Mart card should exist');
+    // Step 2: Enter placeholder Google review URL
+    const testGoogleUrl = 'https://search.google.com/local/writereview?placeid=ROYAL_CAFE_PLACEHOLDER_789';
+    console.log(`Step 2: Entering placeholder Google review URL: ${testGoogleUrl}`);
+    await page.type('#google-review-url', testGoogleUrl);
 
-    const qrSvgs = await page.$$('.qr-box svg');
-    assert(qrSvgs.length >= 3, 'Should render at least 3 QR codes');
-    console.log(`  ✓ Developer Portal rendered ${qrSvgs.length} QR codes for configured businesses`);
+    // Step 3: Generate the QR
+    console.log('Step 3: Clicking "Generate QR" button...');
+    await page.click('.btn-generate-qr');
+    await page.waitForSelector('#qr-result-section', { timeout: 3000 });
 
-    // Step 2: Test /r/demo-waffle-shop with single "Copy & Leave Review →" CTA
-    console.log('\nStep 2: Testing /r/demo-waffle-shop unified CTA flow...');
-    await page.goto(`http://localhost:${PORT}/r/demo-waffle-shop`, { waitUntil: 'networkidle0' });
+    // Step 4: Verify the QR contains /r/royal-cafe
+    console.log('Step 4: Verifying QR code value and customer URL...');
+    const resultBizName = await page.$eval('.result-business-name', el => el.textContent.trim());
+    assert.equal(resultBizName, 'Royal Cafe');
 
-    // Spy on window.open
-    await page.evaluate(() => {
-      window.__openedUrls = [];
-      window.open = (url) => {
-        window.__openedUrls.push(url);
-      };
-    });
+    const customerUrlText = await page.$eval('.customer-url-link', el => el.textContent.trim());
+    const expectedCustomerUrl = `http://localhost:${PORT}/r/royal-cafe`;
+    assert.equal(customerUrlText, expectedCustomerUrl);
 
-    const waffleShopName = await page.$eval('.shop-name', el => el.textContent);
-    assert.equal(waffleShopName, 'Demo Waffle Shop');
-    const wafflePrompt = await page.$eval('.rating-prompt', el => el.textContent);
-    assert(wafflePrompt.includes('How was your experience at Demo Waffle Shop?'));
-    console.log('  ✓ Demo Waffle Shop prompt matches:', wafflePrompt.trim());
+    const qrDataValue = await page.$eval('.qr-canvas-holder', el => el.getAttribute('data-qr-value'));
+    assert.equal(qrDataValue, expectedCustomerUrl);
+    assert(qrDataValue.includes('/r/royal-cafe'));
+    assert(!qrDataValue.includes('google.com'), 'QR must NOT encode Google review URL directly');
 
-    // Tap 5 stars to reveal review section
-    const waffleStars = await page.$$('.star-button');
-    await waffleStars[4].click();
-    await page.waitForSelector('.btn-primary-review', { timeout: 3000 });
+    // Verify canvas rendered
+    const qrCanvas = await page.$('#business-qr-canvas');
+    assert(qrCanvas !== null, 'QR canvas element must exist');
+    console.log(`  ✓ QR code correctly encodes customer URL: ${qrDataValue}`);
 
-    // Verify removal of legacy buttons & 3-step box
-    const oldCopyBtn = await page.$('.btn-copy');
-    const oldGoogleBtn = await page.$('.btn-google');
-    const oldFlowHint = await page.$('.flow-hint');
-    assert.equal(oldCopyBtn, null, 'Separate Copy Review button must be removed');
-    assert.equal(oldGoogleBtn, null, 'Separate Leave Google Review button must be removed');
-    assert.equal(oldFlowHint, null, 'Legacy 3-step instructional box must be removed');
-    console.log('  ✓ Separate buttons and 3-step box are removed');
-
-    // Verify single primary button exists
-    const primaryBtn = await page.$('.btn-primary-review');
-    assert(primaryBtn !== null, 'Unified "Copy & Leave Review →" button must exist');
-    const btnText = await page.evaluate(el => el.textContent, primaryBtn);
-    assert(btnText.includes('Copy & Leave Review'), `Button text should include 'Copy & Leave Review', got: ${btnText}`);
-    console.log('  ✓ Single primary button "Copy & Leave Review →" verified');
-
-    // Verify subtle helper text below button
-    const helperText = await page.$eval('.subtle-helper-text', el => el.textContent);
-    assert.equal(helperText.trim(), 'Your review has been copied. Paste it on Google and submit your rating.');
-    console.log('  ✓ Subtle helper text verified:', helperText.trim());
-
-    // Verify textarea is editable before clicking
-    const textarea = await page.$('.draft-textarea');
-    await textarea.focus();
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
-    await page.keyboard.press('Backspace');
-    await textarea.type('Custom edit: Outstanding liege waffles!');
-    const editedValue = await page.$eval('.draft-textarea', el => el.value);
-    assert.equal(editedValue, 'Custom edit: Outstanding liege waffles!');
-    console.log('  ✓ Review textarea is fully editable before button click');
-
-    // Click "Copy & Leave Review →"
-    await primaryBtn.click();
-    await new Promise(r => setTimeout(r, 300));
-
-    // Verify button state changes to copied
-    const updatedBtnText = await page.evaluate(el => el.textContent, primaryBtn);
-    assert(updatedBtnText.includes('Copied'), `Button text should show copied status, got: ${updatedBtnText}`);
-
-    // Verify window.open was called with configured Google review URL
-    const openedUrls = await page.evaluate(() => window.__openedUrls);
-    assert.equal(openedUrls.length, 1, 'window.open should have been called once');
-    assert(openedUrls[0].includes('search.google.com'), `Should open Google review URL, got: ${openedUrls[0]}`);
-    console.log('  ✓ Single click copied review and triggered Google URL open:', openedUrls[0]);
-
-    // Step 3: Test /r/royal-cafe
-    console.log('\nStep 3: Testing /r/royal-cafe with unified CTA...');
+    // Step 5: Open /r/royal-cafe
+    console.log('\nStep 5: Opening /r/royal-cafe in the browser...');
     await page.goto(`http://localhost:${PORT}/r/royal-cafe`, { waitUntil: 'networkidle0' });
 
+    // Step 6: Verify the customer page says "Royal Cafe"
+    console.log('Step 6: Verifying customer page displays "Royal Cafe"...');
+    const customerPageTitle = await page.$eval('.shop-name', el => el.textContent.trim());
+    assert.equal(customerPageTitle, 'Royal Cafe');
+
+    const customerPrompt = await page.$eval('.rating-prompt', el => el.textContent.trim());
+    assert(customerPrompt.includes('How was your experience at Royal Cafe?'));
+    console.log('  ✓ Customer page verified for "Royal Cafe":', customerPrompt);
+
+    // Step 7: Verify its Google button uses Royal Cafe's configured Google review URL
+    console.log('Step 7: Verifying configured Google review URL triggers on review submit...');
+    // Intercept window.open
     await page.evaluate(() => {
       window.__openedUrls = [];
       window.open = (url) => {
@@ -135,46 +99,69 @@ const server = app.listen(PORT, async () => {
       };
     });
 
-    const cafeShopName = await page.$eval('.shop-name', el => el.textContent);
-    assert.equal(cafeShopName, 'Royal Cafe');
-    const cafePrompt = await page.$eval('.rating-prompt', el => el.textContent);
-    assert(cafePrompt.includes('How was your experience at Royal Cafe?'));
+    // Tap 5 stars to reveal Copy & Leave Review button
+    const stars = await page.$$('.star-button');
+    await stars[4].click();
+    await page.waitForSelector('.btn-primary-review', { timeout: 3000 });
 
-    // Tap 4 stars
-    const cafeStars = await page.$$('.star-button');
-    await cafeStars[3].click();
-    await page.waitForSelector('.experience-container', { timeout: 3000 });
-
-    // Select Food pill
-    const cafePills = await page.$$('.pill-button');
-    await cafePills[0].click(); // Food
+    // Click "Copy & Leave Review →"
+    const submitReviewBtn = await page.$('.btn-primary-review');
+    await submitReviewBtn.click();
     await new Promise(r => setTimeout(r, 200));
 
-    const cafeReviewText = await page.$eval('.draft-textarea', el => el.value);
-    assert.equal(cafeReviewText, 'Had a really good experience at Royal Cafe. I especially enjoyed the food.');
+    const openedUrls = await page.evaluate(() => window.__openedUrls);
+    assert.equal(openedUrls.length, 1);
+    assert.equal(openedUrls[0], testGoogleUrl);
+    console.log(`  ✓ Google review button launched configured URL: ${openedUrls[0]}`);
 
-    const cafePrimaryBtn = await page.$('.btn-primary-review');
-    await cafePrimaryBtn.click();
+    // Step 8: Refresh the developer page and verify the created business still exists
+    console.log('\nStep 8: Refreshing developer page / to verify localStorage persistence...');
+    await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle0' });
+
+    await page.waitForSelector('#qr-result-section', { timeout: 3000 });
+    const refreshedBizName = await page.$eval('.result-business-name', el => el.textContent.trim());
+    assert.equal(refreshedBizName, 'Royal Cafe', 'Created business should persist across refresh');
+
+    const refreshedCustomerUrl = await page.$eval('.customer-url-link', el => el.textContent.trim());
+    assert.equal(refreshedCustomerUrl, expectedCustomerUrl);
+    console.log('  ✓ Created business successfully persisted across page refresh in localStorage');
+
+    // Step 9: Test Download QR
+    console.log('\nStep 9: Testing "Download QR" functionality...');
+    // Spy on dynamic link click
+    const downloadData = await page.evaluate(() => {
+      const canvas = document.getElementById('business-qr-canvas');
+      if (!canvas) return null;
+      return {
+        dataUrl: canvas.toDataURL('image/png'),
+        width: canvas.width,
+        height: canvas.height
+      };
+    });
+    assert(downloadData !== null, 'Canvas data should be readable');
+    assert(downloadData.dataUrl.startsWith('data:image/png;base64,'), 'Should generate PNG data URL');
+    assert(downloadData.width > 0 && downloadData.height > 0, 'Canvas dimensions must be non-zero');
+
+    const downloadBtn = await page.$('.btn-download-qr');
+    assert(downloadBtn !== null, 'Download QR button must exist');
+    await downloadBtn.click();
+    console.log(`  ✓ Download QR validated: generated PNG data with dimensions ${downloadData.width}x${downloadData.height}`);
+
+    // Step 10: Test Copy URL
+    console.log('\nStep 10: Testing "Copy URL" functionality...');
+    const copyUrlBtn = await page.$('.btn-copy-url');
+    assert(copyUrlBtn !== null, 'Copy URL button must exist');
+
+    await copyUrlBtn.click();
     await new Promise(r => setTimeout(r, 200));
 
-    const cafeOpenedUrls = await page.evaluate(() => window.__openedUrls);
-    assert.equal(cafeOpenedUrls.length, 1);
-    assert(cafeOpenedUrls[0].includes('search.google.com'));
-    console.log('  ✓ Royal Cafe unified CTA executed smoothly');
+    const copyBtnText = await page.evaluate(el => el.textContent.trim(), copyUrlBtn);
+    assert(copyBtnText.includes('Copied ✓'), `Button text should be 'Copied ✓', got: ${copyBtnText}`);
+    console.log('  ✓ Copy URL button transitions to "Copied ✓" state');
 
-    // Step 4: Test /r/fresh-mart
-    console.log('\nStep 4: Testing /r/fresh-mart with unified CTA...');
-    await page.goto(`http://localhost:${PORT}/r/fresh-mart`, { waitUntil: 'networkidle0' });
-
-    const martShopName = await page.$eval('.shop-name', el => el.textContent);
-    assert.equal(martShopName, 'Fresh Mart');
-    const martPrompt = await page.$eval('.rating-prompt', el => el.textContent);
-    assert(martPrompt.includes('How was your experience at Fresh Mart?'));
-    console.log('  ✓ Fresh Mart loaded successfully with dynamic prompt');
-
-    console.log('\n🎊 ALL E2E TESTS WITH UNIFIED CTA PASSED SUCCESSFULLY!\n');
+    console.log('\n🎉 ALL 10 USER TEST REQUIREMENTS PASSED SUCCESSFULLY!\n');
   } catch (err) {
-    console.error('❌ Multi-business E2E test failed:', err);
+    console.error('❌ E2E Test Failed:', err);
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
