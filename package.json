@@ -1,0 +1,33 @@
+{
+  "name": "qr-restaurant-review",
+  "version": "1.0.0",
+  "description": "Minimal mobile-first QR restaurant review web app",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "node server/index.js",
+    "client": "npm --prefix client run dev",
+    "dev": "concurrently \"node server/index.js\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client run build",
+    "test": "node test/test-review-generator.js && node test/test-server.js",
+    "test:e2e": "node test/e2e.js"
+  },
+  "keywords": [
+    "qr",
+    "restaurant",
+    "reviews",
+    "google-reviews",
+    "mobile-first"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^10.0.5",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.40.0"
+  }
+}
