@@ -81,7 +81,7 @@ body {
   flex-direction: column;
 }
 
-/* Shop Header */
+/* Reusable Shop Header */
 .shop-header {
   padding: 28px 24px 20px;
   text-align: center;
@@ -110,15 +110,16 @@ body {
   margin-bottom: 4px;
 }
 
-.verified-badge {
+.business-type-pill {
   display: inline-flex;
   align-items: center;
   font-size: 12px;
   font-weight: 600;
-  color: #059669;
-  background-color: #ecfdf5;
-  padding: 3px 10px;
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 3px 12px;
   border-radius: var(--radius-full);
+  text-transform: capitalize;
   letter-spacing: 0.02em;
 }
 
@@ -513,18 +514,18 @@ body {
 }
 
 /* ==========================================================================
-   Developer Portal Page Styles
+   Developer Portal Page Styles (Multi-Business Grid)
    ========================================================================== */
 
 .dev-portal-container {
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 32px 20px 60px;
 }
 
 .dev-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
 }
 
 .dev-logo-row {
@@ -551,15 +552,21 @@ body {
   color: var(--text-secondary);
 }
 
-.dev-content-grid {
+.dev-businesses-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
 }
 
-@media (min-width: 768px) {
-  .dev-content-grid {
-    grid-template-columns: 1.2fr 1fr;
+@media (min-width: 640px) {
+  .dev-businesses-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dev-businesses-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -567,39 +574,56 @@ body {
   background: #ffffff;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
-  padding: 28px 24px;
+  padding: 24px 20px;
   box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .dev-card-header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 16px;
+  padding-bottom: 14px;
 }
 
-.dev-badge {
-  display: inline-block;
+.biz-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.biz-emoji {
+  font-size: 28px;
+}
+
+.business-type-badge {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #2563eb;
   background-color: #eff6ff;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
-  margin-bottom: 8px;
 }
 
-.dev-card-header h2 {
-  font-size: 22px;
+.biz-name {
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
+  margin-bottom: 4px;
 }
 
-.dev-subtitle {
+.biz-route-tag code {
+  font-family: monospace;
   font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 2px;
+  color: #0284c7;
+  background-color: #f0f9ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
 }
 
 .qr-preview-section {
@@ -607,13 +631,13 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 16px;
-  padding: 16px 0 24px;
+  gap: 14px;
+  padding: 12px 0 20px;
 }
 
 .qr-box {
   background: #ffffff;
-  padding: 14px;
+  padding: 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-sm);
@@ -623,26 +647,21 @@ body {
 .qr-meta {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-}
-
-.qr-hint {
-  font-size: 14px;
-  color: var(--text-secondary);
 }
 
 .direct-link-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 18px;
+  padding: 11px 16px;
   background-color: #0f172a;
   color: #ffffff;
   border-radius: var(--radius-md);
   text-decoration: none;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   transition: background-color 0.2s ease;
 }
 
@@ -652,44 +671,38 @@ body {
 
 .qr-url-text {
   font-family: monospace;
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   word-break: break-all;
 }
 
 .config-section {
   border-top: 1px solid var(--border-subtle);
-  padding-top: 20px;
+  padding-top: 16px;
   margin-top: 8px;
-}
-
-.config-section h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 12px;
 }
 
 .config-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .config-form label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .input-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .config-input {
   flex: 1;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 8px 10px;
+  font-size: 13px;
   font-family: inherit;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -701,12 +714,12 @@ body {
 }
 
 .config-save-btn {
-  padding: 10px 16px;
+  padding: 8px 12px;
   background-color: #f1f5f9;
   border: 1px solid #cbd5e1;
   border-radius: var(--radius-sm);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -715,59 +728,29 @@ body {
   background-color: #e2e8f0;
 }
 
-.config-note {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.info-card h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-.flow-list {
-  padding-left: 20px;
+.quick-links-row {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 14px;
-  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.flow-list li strong {
-  color: var(--text-primary);
-}
-
-.flow-list code {
-  background-color: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #0f172a;
-}
-
-.demo-links-box {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.demo-links-box h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.btn-link {
+.direct-link-pill {
   display: inline-block;
-  color: #2563eb;
-  font-weight: 600;
+  padding: 6px 12px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 500;
   text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.btn-link:hover {
-  text-decoration: underline;
+.direct-link-pill:hover {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  color: #2563eb;
 }
 
 /* Animations */

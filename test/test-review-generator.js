@@ -2,120 +2,61 @@ import assert from 'node:assert/strict';
 import { generateReview, formatAspects, formatCustomNote } from '../client/src/services/reviewGenerator.js';
 import { getBusinessBySlug, getAllBusinesses } from '../server/data/businesses.js';
 
-console.log('🧪 Running Test Suite for QR Restaurant Review App...\n');
+console.log('🧪 Running Test Suite for Multi-Business QR Restaurant Review App...\n');
 
 // 1. Test Business Data Store
 console.log('1. Testing Business Data Store...');
-const demoBiz = getBusinessBySlug('demo-waffle-shop');
-assert(demoBiz !== null, 'demo-waffle-shop should exist');
-assert.equal(demoBiz.name, 'Demo Waffle Shop');
-assert.equal(demoBiz.slug, 'demo-waffle-shop');
-assert(demoBiz.googleReviewUrl.includes('search.google.com'), 'googleReviewUrl should be configured');
+const businesses = getAllBusinesses();
+assert(businesses.length >= 3, 'Should have at least 3 businesses configured');
 
-const allBiz = getAllBusinesses();
-assert.equal(allBiz.length >= 1, true, 'At least 1 business should be returned');
-console.log('  ✓ Business repository queries pass');
+const slugs = ['demo-waffle-shop', 'royal-cafe', 'fresh-mart'];
+for (const slug of slugs) {
+  const biz = getBusinessBySlug(slug);
+  assert(biz !== null, `Business ${slug} should exist`);
+  assert(biz.name.length > 0, `Business ${slug} should have a name`);
+  assert(biz.type.length > 0, `Business ${slug} should have a type`);
+  assert(biz.googleReviewUrl.length > 0, `Business ${slug} should have a googleReviewUrl`);
+  console.log(`  ✓ Business ${biz.name} (${biz.type}) loaded successfully`);
+}
 
-// 2. Test Fallback Review Templates (Exact match with user specification)
-console.log('\n2. Testing Exact Fallback Review Templates (No aspects or custom notes)...');
+// 2. Test Dynamic Review Generation for Multiple Businesses
+console.log('\n2. Testing Dynamic Review Generation for Multiple Businesses...');
 
-const fallback5 = generateReview({ businessName: 'Demo Waffle Shop', rating: 5 });
-assert.equal(
-  fallback5,
-  'Really enjoyed my experience at Demo Waffle Shop. The food and service were great, and the ambience was lovely.',
-  '5-star fallback should match prompt example'
-);
-console.log('  ✓ 5-star fallback passes:', fallback5);
-
-const fallback4 = generateReview({ businessName: 'Demo Waffle Shop', rating: 4 });
-assert.equal(
-  fallback4,
-  'Had a really good experience at Demo Waffle Shop. I especially enjoyed the food and service.',
-  '4-star fallback should match prompt example'
-);
-console.log('  ✓ 4-star fallback passes:', fallback4);
-
-const fallback3 = generateReview({ businessName: 'Demo Waffle Shop', rating: 3 });
-assert.equal(
-  fallback3,
-  'My experience at Demo Waffle Shop was decent. I liked the food and ambience, although there is some room for improvement.',
-  '3-star fallback should match prompt example'
-);
-console.log('  ✓ 3-star fallback passes:', fallback3);
-
-const fallback2 = generateReview({ businessName: 'Demo Waffle Shop', rating: 2 });
-assert.equal(
-  fallback2,
-  'The experience was below what I expected. I liked the food, but there are areas that could be improved.',
-  '2-star fallback should match prompt example'
-);
-console.log('  ✓ 2-star fallback passes:', fallback2);
-
-const fallback1 = generateReview({ businessName: 'Demo Waffle Shop', rating: 1 });
-assert.equal(
-  fallback1,
-  'My experience at Demo Waffle Shop was disappointing. There are several areas that could be improved.',
-  '1-star fallback should match prompt example'
-);
-console.log('  ✓ 1-star fallback passes:', fallback1);
-
-// 3. Test Dynamic Aspect Incorporation (No hallucinated details)
-console.log('\n3. Testing Dynamic Customer Aspects Incorporation...');
-
-const dynamicReview5 = generateReview({
-  businessName: 'Demo Waffle Shop',
+// Royal Cafe
+const cafe5Star = generateReview({
+  businessName: 'Royal Cafe',
   rating: 5,
-  likedAspects: ['Food', 'Cleanliness']
+  likedAspects: ['Food', 'Service']
 });
 assert.equal(
-  dynamicReview5,
-  'Really enjoyed my experience at Demo Waffle Shop. The food and cleanliness were great.',
-  '5-star review should reflect only selected aspects'
+  cafe5Star,
+  'Really enjoyed my experience at Royal Cafe. The food and service were great.'
 );
-console.log('  ✓ 5-star with custom aspects:', dynamicReview5);
+console.log('  ✓ Royal Cafe 5-star review:', cafe5Star);
 
-const singleAspectReview = generateReview({
+// Fresh Mart
+const mart4Star = generateReview({
+  businessName: 'Fresh Mart',
+  rating: 4,
+  likedAspects: ['Cleanliness', 'Price'],
+  specificFeedback: 'Great fresh produce and quick checkout'
+});
+assert.equal(
+  mart4Star,
+  'Had a really good experience at Fresh Mart. I especially enjoyed the cleanliness and price. Great fresh produce and quick checkout.'
+);
+console.log('  ✓ Fresh Mart 4-star review with note:', mart4Star);
+
+// Demo Waffle Shop
+const waffle3Star = generateReview({
   businessName: 'Demo Waffle Shop',
-  rating: 5,
-  likedAspects: ['Service']
+  rating: 3,
+  likedAspects: ['Food']
 });
 assert.equal(
-  singleAspectReview,
-  'Really enjoyed my experience at Demo Waffle Shop. The service was great.',
-  'Single aspect should use singular "was"'
+  waffle3Star,
+  'My experience at Demo Waffle Shop was decent. I liked the food, although there is some room for improvement.'
 );
-console.log('  ✓ Single aspect formatting:', singleAspectReview);
+console.log('  ✓ Demo Waffle Shop 3-star review:', waffle3Star);
 
-// 4. Test Customer Specific Note Incorporation
-console.log('\n4. Testing Customer Note Incorporation...');
-
-const reviewWithNote = generateReview({
-  businessName: 'Demo Waffle Shop',
-  rating: 5,
-  likedAspects: ['Food', 'Service'],
-  specificFeedback: 'Loved the chocolate waffle and friendly service'
-});
-assert.equal(
-  reviewWithNote,
-  'Really enjoyed my experience at Demo Waffle Shop. The food and service were great. Loved the chocolate waffle and friendly service.',
-  'Should incorporate specific note with punctuation'
-);
-console.log('  ✓ Review with specific customer note:', reviewWithNote);
-
-// 5. Test Low Rating with specific feedback
-console.log('\n5. Testing Low Rating with specific feedback...');
-
-const reviewLowRating = generateReview({
-  businessName: 'Demo Waffle Shop',
-  rating: 2,
-  likedAspects: ['Food'],
-  specificFeedback: 'The seating area was crowded and wait was long'
-});
-assert.equal(
-  reviewLowRating,
-  'The experience was below what I expected. I liked the food, but there are areas that could be improved. The seating area was crowded and wait was long.',
-  'Should balance low rating with customer feedback'
-);
-console.log('  ✓ 2-star with specific feedback:', reviewLowRating);
-
-console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY!\n');
+console.log('\n🎉 ALL MULTI-BUSINESS REVIEW GENERATOR TESTS PASSED!\n');

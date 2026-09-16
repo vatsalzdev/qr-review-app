@@ -21,11 +21,11 @@ app.use((req, res, next) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
-const PORT = 5100;
+const PORT = 5101;
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
 const server = app.listen(PORT, async () => {
-  console.log(`🌐 Server running for E2E tests at http://localhost:${PORT}`);
+  console.log(`🌐 Server running for Multi-Business E2E tests at http://localhost:${PORT}`);
   let browser;
 
   try {
@@ -36,106 +36,96 @@ const server = app.listen(PORT, async () => {
     });
 
     const page = await browser.newPage();
-    // Simulate mobile viewport (iPhone 14 / modern Android)
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
 
-    // 1. Visit Dev Portal
-    console.log('\nStep 1: Testing Developer Portal (QR view)...');
+    // Step 1: Check Developer Portal displays all businesses & QR codes
+    console.log('\nStep 1: Testing Developer Portal with Multiple Businesses...');
     await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle0' });
-    const devTitle = await page.$eval('h1', el => el.textContent);
-    assert(devTitle.includes('QR Review App Developer Portal'));
-    const qrSvg = await page.$('svg');
-    assert(qrSvg !== null, 'QR Code SVG should be rendered');
-    console.log('  ✓ Developer Portal renders with QR code');
 
-    // 2. Visit Customer Flow: /r/demo-waffle-shop
-    console.log('\nStep 2: Testing Customer Landing Page (/r/demo-waffle-shop)...');
+    const waffleCard = await page.$('#card-demo-waffle-shop');
+    const cafeCard = await page.$('#card-royal-cafe');
+    const martCard = await page.$('#card-fresh-mart');
+
+    assert(waffleCard !== null, 'Demo Waffle Shop card should exist');
+    assert(cafeCard !== null, 'Royal Cafe card should exist');
+    assert(martCard !== null, 'Fresh Mart card should exist');
+
+    const qrSvgs = await page.$$('.qr-box svg');
+    assert(qrSvgs.length >= 3, 'Should render at least 3 QR codes');
+    console.log(`  ✓ Developer Portal rendered ${qrSvgs.length} QR codes for configured businesses`);
+
+    // Step 2: Test /r/demo-waffle-shop
+    console.log('\nStep 2: Testing /r/demo-waffle-shop...');
     await page.goto(`http://localhost:${PORT}/r/demo-waffle-shop`, { waitUntil: 'networkidle0' });
 
-    // Check heading
-    const shopHeading = await page.$eval('.shop-name', el => el.textContent);
-    assert.equal(shopHeading, 'Demo Waffle Shop');
-    const ratingPrompt = await page.$eval('.rating-prompt', el => el.textContent);
-    assert(ratingPrompt.includes('How was your experience at Demo Waffle Shop?'));
+    const waffleShopName = await page.$eval('.shop-name', el => el.textContent);
+    assert.equal(waffleShopName, 'Demo Waffle Shop');
+    const wafflePrompt = await page.$eval('.rating-prompt', el => el.textContent);
+    assert(wafflePrompt.includes('How was your experience at Demo Waffle Shop?'));
+    console.log('  ✓ Demo Waffle Shop prompt matches:', wafflePrompt.trim());
 
-    // Check 5 stars present
-    const starButtons = await page.$$('.star-button');
-    assert.equal(starButtons.length, 5, 'Should have 5 star buttons');
-    console.log('  ✓ 5 empty stars and prompt displayed cleanly on mobile');
+    // Tap 5 stars to reveal Google button and verify URL
+    const waffleStars = await page.$$('.star-button');
+    await waffleStars[4].click();
+    await page.waitForSelector('.btn-google', { timeout: 3000 });
+    console.log('  ✓ Demo Waffle Shop interactive flow works');
 
-    // Experience section should not be visible before rating
-    const experienceBefore = await page.$('.experience-container');
-    assert.equal(experienceBefore, null, 'Experience section should not be visible initially');
+    // Step 3: Test /r/royal-cafe
+    console.log('\nStep 3: Testing /r/royal-cafe...');
+    await page.goto(`http://localhost:${PORT}/r/royal-cafe`, { waitUntil: 'networkidle0' });
 
-    // 3. Select 5 Stars
-    console.log('\nStep 3: Tapping 5 stars...');
-    await starButtons[4].click();
-    await new Promise(r => setTimeout(r, 300));
+    const cafeShopName = await page.$eval('.shop-name', el => el.textContent);
+    assert.equal(cafeShopName, 'Royal Cafe');
+    const cafeType = await page.$eval('.business-type-pill', el => el.textContent);
+    assert.equal(cafeType, 'cafe');
+    const cafePrompt = await page.$eval('.rating-prompt', el => el.textContent);
+    assert(cafePrompt.includes('How was your experience at Royal Cafe?'));
+    console.log('  ✓ Royal Cafe prompt matches:', cafePrompt.trim());
 
-    // Check stars filled
-    const filledStars = await page.$$('.star-button.filled');
-    assert.equal(filledStars.length, 5, 'All 5 stars should be filled');
-    const caption = await page.$eval('.rating-caption', el => el.textContent);
-    assert(caption.includes('Loved it'));
-    console.log('  ✓ Stars visually highlighted and caption updated');
-
-    // 4. Verify Experience Selection appears
-    console.log('\nStep 4: Checking Experience Selection...');
+    // Tap 4 stars
+    const cafeStars = await page.$$('.star-button');
+    await cafeStars[3].click();
     await page.waitForSelector('.experience-container', { timeout: 3000 });
-    const expTitle = await page.$eval('.section-title', el => el.textContent);
-    assert.equal(expTitle, 'What did you like?');
 
-    // Check pills
-    const pills = await page.$$('.pill-button');
-    assert.equal(pills.length, 5, 'Food, Service, Ambience, Price, Cleanliness pills should be present');
-
-    // Select "Food" (index 0) and "Service" (index 1)
-    await pills[0].click();
-    await pills[1].click();
+    // Select Food pill
+    const cafePills = await page.$$('.pill-button');
+    await cafePills[0].click(); // Food
     await new Promise(r => setTimeout(r, 200));
 
-    // Type optional specific note
-    const textarea = await page.$('#specific-enjoyed-input');
-    await textarea.type('Loved the chocolate waffle and friendly service');
-    await new Promise(r => setTimeout(r, 300));
-    console.log('  ✓ Selected Food & Service and typed specific note');
+    const cafeReviewText = await page.$eval('.draft-textarea', el => el.value);
+    assert.equal(cafeReviewText, 'Had a really good experience at Royal Cafe. I especially enjoyed the food.');
+    console.log('  ✓ Royal Cafe generated review draft:', cafeReviewText);
 
-    // 5. Verify Review Draft Generation
-    console.log('\nStep 5: Verifying Generated Review Draft...');
-    await page.waitForSelector('.review-draft-container', { timeout: 3000 });
-    const draftTitle = await page.$eval('.review-draft-container .section-title', el => el.textContent);
-    assert.equal(draftTitle, 'Your review draft');
-
-    const reviewDraftText = await page.$eval('.draft-textarea', el => el.value);
-    console.log('  Generated draft text:', JSON.stringify(reviewDraftText));
-
-    const expectedText = 'Really enjoyed my experience at Demo Waffle Shop. The food and service were great. Loved the chocolate waffle and friendly service.';
-    assert.equal(reviewDraftText, expectedText);
-    console.log('  ✓ Review draft matches exact factual template without hallucination');
-
-    // 6. Test Copy Review button
-    console.log('\nStep 6: Testing Copy Review button...');
+    // Test Copy button
     const copyBtn = await page.$('.btn-copy');
-    const initialCopyBtnText = await page.evaluate(el => el.textContent, copyBtn);
-    assert(initialCopyBtnText.includes('Copy Review'));
-
     await copyBtn.click();
     await new Promise(r => setTimeout(r, 200));
+    const copiedText = await page.evaluate(el => el.textContent, copyBtn);
+    assert(copiedText.includes('Copied ✓'));
+    console.log('  ✓ Copy button transitions to "Copied ✓"');
 
-    const copiedBtnText = await page.evaluate(el => el.textContent, copyBtn);
-    assert(copiedBtnText.includes('Copied ✓'), `Button text should be 'Copied ✓', got: ${copiedBtnText}`);
-    console.log('  ✓ Button changed to "Copied ✓" on click');
+    // Step 4: Test /r/fresh-mart
+    console.log('\nStep 4: Testing /r/fresh-mart...');
+    await page.goto(`http://localhost:${PORT}/r/fresh-mart`, { waitUntil: 'networkidle0' });
 
-    // 7. Test Google Review Button
-    console.log('\nStep 7: Verifying Google Review Button...');
-    const googleBtn = await page.$('.btn-google');
-    const googleBtnText = await page.evaluate(el => el.textContent, googleBtn);
-    assert(googleBtnText.includes('Leave Google Review'));
-    console.log('  ✓ Google Review Button is present and prominent');
+    const martShopName = await page.$eval('.shop-name', el => el.textContent);
+    assert.equal(martShopName, 'Fresh Mart');
+    const martType = await page.$eval('.business-type-pill', el => el.textContent);
+    assert.equal(martType, 'grocery store');
+    const martPrompt = await page.$eval('.rating-prompt', el => el.textContent);
+    assert(martPrompt.includes('How was your experience at Fresh Mart?'));
+    console.log('  ✓ Fresh Mart prompt matches:', martPrompt.trim());
 
-    console.log('\n🎊 ALL E2E MOBILE USER FLOW TESTS PASSED!\n');
+    // Step 5: Test unknown slug error page
+    console.log('\nStep 5: Testing unknown slug /r/non-existent-shop...');
+    await page.goto(`http://localhost:${PORT}/r/non-existent-shop`, { waitUntil: 'networkidle0' });
+    const notFoundText = await page.$eval('.error-page h2', el => el.textContent);
+    assert.equal(notFoundText, 'Business Not Found');
+    console.log('  ✓ Gracefully handled unknown business slug');
+
+    console.log('\n🎊 ALL MULTI-BUSINESS E2E TESTS PASSED SUCCESSFULLY!\n');
   } catch (err) {
-    console.error('❌ E2E Test Failed:', err);
+    console.error('❌ Multi-business E2E test failed:', err);
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();

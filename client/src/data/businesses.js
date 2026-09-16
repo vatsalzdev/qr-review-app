@@ -38,19 +38,6 @@ export function getBusinessBySlug(slug) {
   return null;
 }
 
-export function updateBusinessGoogleUrl(slug, newUrl) {
-  if (!slug) return null;
-  const key = slug.toLowerCase();
-  if (businesses[key]) {
-    businesses[key].googleReviewUrl = newUrl;
-    return {
-      slug: key,
-      ...businesses[key]
-    };
-  }
-  return null;
-}
-
 export function getAllBusinesses() {
   return Object.entries(businesses).map(([slug, data]) => ({
     slug,

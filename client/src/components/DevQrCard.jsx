@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
+const TYPE_EMOJI_MAP = {
+  'waffle shop': '🧇',
+  'cafe': '☕',
+  'grocery store': '🛒',
+  'cocktail bar': '🍸',
+  'restaurant': '🍽️',
+  'bar': '🍻'
+};
+
 export default function DevQrCard({ business, onUpdateGoogleUrl }) {
   const [tempUrl, setTempUrl] = useState(business?.googleReviewUrl || '');
   const [isSaved, setIsSaved] = useState(false);
 
   if (!business) return null;
 
-  // Build the full customer review URL based on the current window location
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
   const customerReviewUrl = `${currentOrigin}/r/${business.slug}`;
+  const emoji = TYPE_EMOJI_MAP[business.type?.toLowerCase()] || '🏪';
 
   const handleSaveUrl = (e) => {
     e.preventDefault();
@@ -21,25 +30,29 @@ export default function DevQrCard({ business, onUpdateGoogleUrl }) {
   };
 
   return (
-    <div className="dev-card">
+    <div className="dev-card" id={`card-${business.slug}`}>
       <div className="dev-card-header">
-        <span className="dev-badge">Development & Business Hub</span>
-        <h2>{business.avatarEmoji || '🏪'} {business.name}</h2>
-        <p className="dev-subtitle">{business.category} • {business.location}</p>
+        <div className="biz-header-top">
+          <span className="biz-emoji">{emoji}</span>
+          <span className="business-type-badge">{business.type}</span>
+        </div>
+        <h2 className="biz-name">{business.name}</h2>
+        <div className="biz-route-tag">
+          <code>/r/{business.slug}</code>
+        </div>
       </div>
 
       <div className="qr-preview-section">
         <div className="qr-box">
           <QRCodeSVG
             value={customerReviewUrl}
-            size={200}
+            size={180}
             level="H"
             includeMargin={true}
           />
         </div>
 
         <div className="qr-meta">
-          <p className="qr-hint">Scan with your phone camera or tap the direct link below:</p>
           <a
             href={`/r/${business.slug}`}
             className="direct-link-btn"
@@ -51,14 +64,13 @@ export default function DevQrCard({ business, onUpdateGoogleUrl }) {
       </div>
 
       <div className="config-section">
-        <h3>Business Configuration</h3>
         <form onSubmit={handleSaveUrl} className="config-form">
-          <label htmlFor="google-review-url-input">
-            Target Google Review URL:
+          <label htmlFor={`google-url-${business.slug}`}>
+            Configured Google Review URL:
           </label>
           <div className="input-group">
             <input
-              id="google-review-url-input"
+              id={`google-url-${business.slug}`}
               type="url"
               value={tempUrl}
               onChange={(e) => setTempUrl(e.target.value)}
@@ -67,12 +79,9 @@ export default function DevQrCard({ business, onUpdateGoogleUrl }) {
               className="config-input"
             />
             <button type="submit" className="config-save-btn">
-              {isSaved ? 'Saved ✓' : 'Update URL'}
+              {isSaved ? 'Saved ✓' : 'Save'}
             </button>
           </div>
-          <span className="config-note">
-            When customer taps &ldquo;Leave Google Review&rdquo;, this destination opens.
-          </span>
         </form>
       </div>
     </div>

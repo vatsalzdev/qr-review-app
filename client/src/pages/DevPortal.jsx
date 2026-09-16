@@ -1,19 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import DevQrCard from '../components/DevQrCard';
+import { getAllBusinesses } from '../data/businesses.js';
 
 export default function DevPortal() {
-  const [businesses, setBusinesses] = useState([
-    {
-      id: 'b1',
-      name: 'Demo Waffle Shop',
-      slug: 'demo-waffle-shop',
-      category: 'Artisanal Waffle & Dessert Café',
-      location: '124 Maple Street, Downtown',
-      googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
-      avatarEmoji: '🧇'
-    }
-  ]);
-  const [loading, setLoading] = useState(false);
+  const [businesses, setBusinesses] = useState(() => getAllBusinesses());
 
   useEffect(() => {
     async function loadBusinesses() {
@@ -21,12 +11,12 @@ export default function DevPortal() {
         const res = await fetch('/api/businesses');
         if (res.ok) {
           const data = await res.json();
-          if (data.success && data.data && data.data.length > 0) {
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
             setBusinesses(data.data);
           }
         }
       } catch {
-        // Fallback to local state if server isn't running yet
+        // Keeps the local fallback businesses
       }
     }
     loadBusinesses();
@@ -47,7 +37,6 @@ export default function DevPortal() {
           );
         }
       } else {
-        // Local update if offline
         setBusinesses(prev =>
           prev.map(b => b.slug === slug ? { ...b, googleReviewUrl: newUrl } : b)
         );
@@ -67,11 +56,11 @@ export default function DevPortal() {
           <h1>QR Review App Developer Portal</h1>
         </div>
         <p className="dev-header-desc">
-          Generate, scan, and test the mobile customer review experience.
+          Scan or click any business below to test the reusable customer review experience.
         </p>
       </header>
 
-      <div className="dev-content-grid">
+      <div className="dev-businesses-grid">
         {businesses.map((biz) => (
           <DevQrCard
             key={biz.slug}
@@ -79,36 +68,19 @@ export default function DevPortal() {
             onUpdateGoogleUrl={handleUpdateGoogleUrl}
           />
         ))}
+      </div>
 
-        <div className="dev-card info-card">
-          <h3>How the Flow Works</h3>
-          <ol className="flow-list">
-            <li>
-              <strong>QR Code Placement:</strong> Printed on table tents, receipts, or checkout counter.
-            </li>
-            <li>
-              <strong>Customer Scans:</strong> Opens <code>/r/{businesses[0]?.slug}</code> on their smartphone.
-            </li>
-            <li>
-              <strong>Instant Rating:</strong> Customer taps 1-5 stars.
-            </li>
-            <li>
-              <strong>Experience Tags:</strong> Food, Service, Ambience, Price, Cleanliness + custom note.
-            </li>
-            <li>
-              <strong>Review Generated:</strong> Factual, deterministic template built solely from customer input.
-            </li>
-            <li>
-              <strong>1-Tap Copy & Redirect:</strong> Review copied to clipboard; Google Place review page opened.
-            </li>
-          </ol>
-
-          <div className="demo-links-box">
-            <h4>Quick Links</h4>
-            <a href={`/r/${businesses[0]?.slug}`} className="btn-link">
-              Launch Customer View in this tab →
+      <div className="dev-card info-card" style={{ marginTop: '32px' }}>
+        <h3>Multi-Tenant Architecture</h3>
+        <p className="dev-subtitle" style={{ marginBottom: '16px' }}>
+          All customer links route into the single reusable <code>&lt;CustomerReviewPage /&gt;</code> component via <code>/r/:businessSlug</code>.
+        </p>
+        <div className="quick-links-row">
+          {businesses.map((b) => (
+            <a key={b.slug} href={`/r/${b.slug}`} className="direct-link-pill">
+              /r/{b.slug} ({b.name})
             </a>
-          </div>
+          ))}
         </div>
       </div>
     </div>
