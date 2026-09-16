@@ -9,12 +9,15 @@ export default function ReviewDraft({
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
 
-  const handleCopy = async () => {
+  const handleCopyAndLeaveReview = async () => {
+    let success = false;
+
+    // 1. Copy the current editable review text to clipboard
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(reviewText);
+        success = true;
       } else {
-        // Fallback for non-https or restricted webviews
         const textArea = document.createElement('textarea');
         textArea.value = reviewText;
         textArea.style.position = 'fixed';
@@ -23,24 +26,23 @@ export default function ReviewDraft({
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        document.execCommand('copy');
+        success = document.execCommand('copy');
         textArea.remove();
       }
+    } catch (err) {
+      console.warn('Clipboard write failed: ', err);
+      success = false;
+    }
 
+    if (success) {
       setCopied(true);
       setCopyFailed(false);
-      setTimeout(() => {
-        setCopied(false);
-      }, 2500);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
+      setTimeout(() => setCopied(false), 4000);
+    } else {
       setCopyFailed(true);
-      setTimeout(() => setCopyFailed(false), 2000);
     }
-  };
 
-  const handleGoogleReviewClick = () => {
-    // Open configurable Google review URL in a new tab
+    // 2. Open configured Google review URL in a new tab
     if (googleReviewUrl) {
       window.open(googleReviewUrl, '_blank', 'noopener,noreferrer');
     }
@@ -54,7 +56,7 @@ export default function ReviewDraft({
           <span className="badge-rating">{rating} ★ rating</span>
         </div>
         <p className="draft-subtitle">
-          Generated based purely on what you shared. You can edit this text directly before copying.
+          Generated based purely on what you shared. Feel free to edit below before submitting.
         </p>
       </div>
 
@@ -64,54 +66,34 @@ export default function ReviewDraft({
           value={reviewText}
           onChange={(e) => onReviewChange(e.target.value)}
           rows={4}
-          aria-label="Generated review draft"
+          aria-label="Editable review draft"
         />
       </div>
 
       <div className="actions-container">
-        {/* Prominent Copy Review Button */}
+        {/* Single Primary Action Button */}
         <button
           type="button"
-          onClick={handleCopy}
-          className={`btn btn-copy ${copied ? 'btn-copied' : ''}`}
-          aria-live="polite"
+          onClick={handleCopyAndLeaveReview}
+          className={`btn btn-primary-review ${copied ? 'btn-copied-state' : ''}`}
+          aria-label="Copy review and open Google review page"
         >
-          {copied ? (
-            <>
-              <span className="btn-icon">✓</span>
-              <span>Copied ✓</span>
-            </>
-          ) : (
-            <>
-              <span className="btn-icon">📋</span>
-              <span>Copy Review</span>
-            </>
-          )}
-        </button>
-
-        {copyFailed && (
-          <p className="copy-error-hint">Please manually select and copy the text above.</p>
-        )}
-
-        {/* Step hint showing the seamless flow */}
-        <div className="flow-hint">
-          <span className="flow-step">1. Tap <strong>Copy Review</strong></span>
-          <span className="flow-arrow">→</span>
-          <span className="flow-step">2. Tap <strong>Leave Google Review</strong></span>
-          <span className="flow-arrow">→</span>
-          <span className="flow-step">3. Paste your review on Google</span>
-        </div>
-
-        {/* Prominent Google Review Button */}
-        <button
-          type="button"
-          onClick={handleGoogleReviewClick}
-          className="btn btn-google"
-          aria-label="Open Google review page"
-        >
-          <span>Leave Google Review</span>
+          <span>{copied ? 'Copied ✓ & Opening Google' : 'Copy & Leave Review'}</span>
           <span className="btn-arrow">→</span>
         </button>
+
+        {/* Subtle helper text */}
+        <p className={`subtle-helper-text ${copied ? 'helper-active' : ''}`}>
+          Your review has been copied. Paste it on Google and submit your rating.
+        </p>
+
+        {/* Graceful clipboard failure message */}
+        {copyFailed && (
+          <div className="copy-error-banner" role="alert">
+            <span className="error-icon">⚠️</span>
+            <span>Couldn&apos;t copy automatically. Please manually select and copy your review draft above.</span>
+          </div>
+        )}
       </div>
     </div>
   );
