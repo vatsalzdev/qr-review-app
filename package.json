@@ -11,7 +11,8 @@
     "dev": "concurrently \"node server/index.js\" \"npm --prefix client run dev\"",
     "build": "npm --prefix client run build",
     "test": "node test/test-review-generator.js && node test/test-server.js",
-    "test:e2e": "node test/e2e.js"
+    "test:e2e": "node test/e2e.js",
+    "postinstall": "npm --prefix client install"
   },
   "keywords": [
     "qr",
