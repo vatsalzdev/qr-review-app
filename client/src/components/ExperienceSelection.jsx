@@ -11,8 +11,6 @@ const ASPECT_OPTIONS = [
 export default function ExperienceSelection({
   selectedAspects,
   onToggleAspect,
-  specificFeedback,
-  onFeedbackChange,
   rating
 }) {
   // Respectful tone tweak based on rating while keeping prompt's exact core question
@@ -46,24 +44,6 @@ export default function ExperienceSelection({
             </button>
           );
         })}
-      </div>
-
-      <div className="feedback-field-container">
-        <label htmlFor="specific-enjoyed-input" className="field-label">
-          Anything specific you enjoyed? <span className="optional-tag">(optional)</span>
-        </label>
-        <textarea
-          id="specific-enjoyed-input"
-          value={specificFeedback}
-          onChange={(e) => onFeedbackChange(e.target.value)}
-          placeholder="e.g. Loved the chocolate waffle and friendly service"
-          rows={3}
-          className="feedback-textarea"
-          maxLength={300}
-        />
-        <div className="character-hint">
-          {specificFeedback.length > 0 && `${specificFeedback.length}/300 characters`}
-        </div>
       </div>
     </div>
   );

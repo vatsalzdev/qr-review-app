@@ -1,9 +1,11 @@
+import 'dotenv/config';
 import puppeteer from 'puppeteer-core';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from '../server/routes/api.js';
+import { initDb, getBusinessBySlug, deleteBusinessBySlug, closeDb } from '../server/db/mongo.js';
 import assert from 'node:assert/strict';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,10 +27,13 @@ const PORT = 5102;
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
 const server = app.listen(PORT, async () => {
-  console.log(`🌐 Server running for Business + QR Creation E2E tests at http://localhost:${PORT}`);
+  console.log(`🌐 Server running for Stage 1 E2E tests at http://localhost:${PORT}`);
   let browser;
 
   try {
+    // Initialize MongoDB Atlas connection
+    await initDb();
+
     browser = await puppeteer.launch({
       executablePath: edgePath,
       headless: 'new',
@@ -38,60 +43,93 @@ const server = app.listen(PORT, async () => {
     const page = await browser.newPage();
     await page.setViewport({ width: 412, height: 915, isMobile: true, hasTouch: true });
 
-    // Open Developer Page /
-    console.log('\nNavigating to Developer Page /...');
+    // Step 1 & 2: Open Dev Portal
+    console.log('\n[1-2] Navigating to Developer Page / ...');
     await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle0' });
 
-    // Step 1: Create "Royal Cafe"
-    console.log('Step 1: Entering business name "Royal Cafe"...');
+    // Step 3: Create "Burger Fam" through actual Dev Portal UI
+    console.log('[3] Creating "Burger Fam" through the actual UI...');
     await page.waitForSelector('#business-name');
-    await page.type('#business-name', 'Royal Cafe');
+    await page.type('#business-name', 'Burger Fam');
 
-    // Step 2: Enter placeholder Google review URL
-    const testGoogleUrl = 'https://search.google.com/local/writereview?placeid=ROYAL_CAFE_PLACEHOLDER_789';
-    console.log(`Step 2: Entering placeholder Google review URL: ${testGoogleUrl}`);
+    const testGoogleUrl = 'https://search.google.com/local/writereview?placeid=BURGER_FAM_E2E_123';
+    console.log(`    Entering Google review URL: ${testGoogleUrl}`);
     await page.type('#google-review-url', testGoogleUrl);
 
-    // Step 3: Generate the QR
-    console.log('Step 3: Clicking "Generate QR" button...');
+    // Step 4: Submit form (triggers POST /api/businesses)
+    console.log('[4] Clicking "Generate QR" to submit business creation to backend/MongoDB...');
     await page.click('.btn-generate-qr');
-    await page.waitForSelector('#qr-result-section', { timeout: 3000 });
+    await page.waitForSelector('#qr-result-section', { timeout: 5000 });
+    console.log('  ✓ POST /api/businesses succeeded and QR result section rendered');
 
-    // Step 4: Verify the QR contains /r/royal-cafe
-    console.log('Step 4: Verifying QR code value and customer URL...');
-    const resultBizName = await page.$eval('.result-business-name', el => el.textContent.trim());
-    assert.equal(resultBizName, 'Royal Cafe');
+    // Step 5: Verify business is persisted in MongoDB Atlas
+    console.log('[5] Verifying "Burger Fam" is persisted in MongoDB Atlas...');
+    const atlasDoc = await getBusinessBySlug('burger-fam');
+    assert(atlasDoc !== null, 'Business "Burger Fam" not found in Atlas database');
+    assert.equal(atlasDoc.name, 'Burger Fam');
+    assert.equal(atlasDoc.slug, 'burger-fam');
+    assert.equal(atlasDoc.status, 'active');
+    assert.equal(atlasDoc.googleReviewUrl, testGoogleUrl);
+    console.log('  ✓ Business confirmed directly in MongoDB Atlas with status: "active"');
 
+    // Step 6: Verify Customer URL is strictly slug-only (NO ?name=, NO ?google=)
+    console.log('[6] Verifying Customer URL is slug-only without query params...');
     const customerUrlText = await page.$eval('.customer-url-link', el => el.textContent.trim());
-    const expectedCustomerUrl = `http://localhost:${PORT}/r/royal-cafe`;
+    const expectedCustomerUrl = `http://localhost:${PORT}/r/burger-fam`;
     assert.equal(customerUrlText, expectedCustomerUrl);
+    assert(!customerUrlText.includes('?name='), 'Customer URL must not contain ?name=');
+    assert(!customerUrlText.includes('?google='), 'Customer URL must not contain ?google=');
+    console.log(`  ✓ Customer URL is clean slug: ${customerUrlText}`);
 
+    // Step 7: Verify generated QR encodes that clean URL
+    console.log('[7] Verifying generated QR canvas encodes clean slug URL...');
     const qrDataValue = await page.$eval('.qr-canvas-holder', el => el.getAttribute('data-qr-value'));
     assert.equal(qrDataValue, expectedCustomerUrl);
-    assert(qrDataValue.includes('/r/royal-cafe'));
-    assert(!qrDataValue.includes('google.com'), 'QR must NOT encode Google review URL directly');
+    assert(!qrDataValue.includes('?name='), 'QR must NOT contain ?name=');
+    assert(!qrDataValue.includes('?google='), 'QR must NOT contain ?google=');
+    console.log(`  ✓ QR data value correctly encodes: ${qrDataValue}`);
 
-    // Verify canvas rendered
-    const qrCanvas = await page.$('#business-qr-canvas');
-    assert(qrCanvas !== null, 'QR canvas element must exist');
-    console.log(`  ✓ QR code correctly encodes customer URL: ${qrDataValue}`);
+    // Step 8: Open customer URL in a fresh page context with no existing localStorage
+    console.log('\n[8] Opening customer URL in fresh browser context with empty localStorage...');
+    await page.goto(customerUrlText, { waitUntil: 'networkidle0' });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: 'networkidle0' });
 
-    // Step 5: Open /r/royal-cafe
-    console.log('\nStep 5: Opening /r/royal-cafe in the browser...');
-    await page.goto(`http://localhost:${PORT}/r/royal-cafe`, { waitUntil: 'networkidle0' });
-
-    // Step 6: Verify the customer page says "Royal Cafe"
-    console.log('Step 6: Verifying customer page displays "Royal Cafe"...');
+    // Step 9 & 10: Verify customer page retrieves Burger Fam from MongoDB and loads active flow
+    console.log('[9-10] Verifying customer page retrieves "Burger Fam" and loads active flow...');
     const customerPageTitle = await page.$eval('.shop-name', el => el.textContent.trim());
-    assert.equal(customerPageTitle, 'Royal Cafe');
+    assert.equal(customerPageTitle, 'Burger Fam');
 
     const customerPrompt = await page.$eval('.rating-prompt', el => el.textContent.trim());
-    assert(customerPrompt.includes('How was your experience at Royal Cafe?'));
-    console.log('  ✓ Customer page verified for "Royal Cafe":', customerPrompt);
+    assert(customerPrompt.includes('How was your experience at Burger Fam?'));
+    console.log('  ✓ Customer page verified for "Burger Fam" directly from MongoDB');
 
-    // Step 7: Verify its Google button uses Royal Cafe's configured Google review URL
-    console.log('Step 7: Verifying configured Google review URL triggers on review submit...');
-    // Intercept window.open
+    // Step 11: Select rating (5 stars)
+    console.log('\n[11-12] Selecting 5 stars and verifying cinematic AI generation animation...');
+    const stars = await page.$$('.star-button');
+    await stars[4].click();
+
+    // Step 12: Verify cinematic AI generation animation appears
+    const genAnimation = await page.waitForSelector('.review-gen-animation-container', { timeout: 3000 });
+    assert(genAnimation !== null, 'Cinematic AI animation container must appear');
+    const streamViewport = await page.$('.card-stream-viewport');
+    assert(streamViewport !== null, 'Horizontal card stream viewport must appear');
+    console.log('  ✓ Cinematic AI card stream animation appeared');
+
+    // Step 13 & 14: Wait for generated review to appear and verify it is editable
+    console.log('[13-14] Verifying generated review appears and remains editable in textarea...');
+    await page.waitForSelector('.draft-textarea', { timeout: 8000 });
+    const originalReview = await page.$eval('.draft-textarea', el => el.value);
+    assert(originalReview && originalReview.length > 5, 'Review draft must be generated');
+
+    // Test editing review text
+    await page.type('.draft-textarea', ' Adding customized feedback.');
+    const updatedReview = await page.$eval('.draft-textarea', el => el.value);
+    assert(updatedReview.includes('Adding customized feedback.'), 'Review text must be editable');
+    console.log('  ✓ Review draft successfully generated and verified editable');
+
+    // Step 15 & 16: Test Copy & Leave Review and 800ms Google navigation
+    console.log('\n[15-16] Testing Copy & Leave Review button and 800ms Google redirect...');
     await page.evaluate(() => {
       window.__openedUrls = [];
       window.open = (url) => {
@@ -99,71 +137,74 @@ const server = app.listen(PORT, async () => {
       };
     });
 
-    // Tap 5 stars to reveal Copy & Leave Review button
-    const stars = await page.$$('.star-button');
-    await stars[4].click();
-    await page.waitForSelector('.btn-primary-review', { timeout: 3000 });
-
-    // Click "Copy & Leave Review →"
     const submitReviewBtn = await page.$('.btn-primary-review');
     await submitReviewBtn.click();
-    await new Promise(r => setTimeout(r, 200));
 
+    // Verify immediate UI transition to "✓ Review Copied!"
+    const btnTextAfterClick = await page.$eval('.btn-primary-review', el => el.textContent.trim());
+    assert(btnTextAfterClick.includes('Review Copied'), 'Button should switch to copied state');
+
+    // Wait for the intentional 800ms navigation delay before Google URL opens
+    await new Promise(r => setTimeout(r, 1000));
     const openedUrls = await page.evaluate(() => window.__openedUrls);
     assert.equal(openedUrls.length, 1);
     assert.equal(openedUrls[0], testGoogleUrl);
-    console.log(`  ✓ Google review button launched configured URL: ${openedUrls[0]}`);
+    console.log(`  ✓ Google review button launched configured URL after 800ms delay: ${openedUrls[0]}`);
 
-    // Step 8: Refresh the developer page and verify the created business still exists
-    console.log('\nStep 8: Refreshing developer page / to verify localStorage persistence...');
-    await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'networkidle0' });
-
-    await page.waitForSelector('#qr-result-section', { timeout: 3000 });
-    const refreshedBizName = await page.$eval('.result-business-name', el => el.textContent.trim());
-    assert.equal(refreshedBizName, 'Royal Cafe', 'Created business should persist across refresh');
-
-    const refreshedCustomerUrl = await page.$eval('.customer-url-link', el => el.textContent.trim());
-    assert.equal(refreshedCustomerUrl, expectedCustomerUrl);
-    console.log('  ✓ Created business successfully persisted across page refresh in localStorage');
-
-    // Step 9: Test Download QR
-    console.log('\nStep 9: Testing "Download QR" functionality...');
-    // Spy on dynamic link click
-    const downloadData = await page.evaluate(() => {
-      const canvas = document.getElementById('business-qr-canvas');
-      if (!canvas) return null;
-      return {
-        dataUrl: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height
-      };
+    // Step 17: Suspend Burger Fam status via API
+    console.log('\n[17] Updating "Burger Fam" status to "suspended" in database...');
+    const suspendRes = await fetch(`http://localhost:${PORT}/api/businesses/burger-fam/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'suspended' })
     });
-    assert(downloadData !== null, 'Canvas data should be readable');
-    assert(downloadData.dataUrl.startsWith('data:image/png;base64,'), 'Should generate PNG data URL');
-    assert(downloadData.width > 0 && downloadData.height > 0, 'Canvas dimensions must be non-zero');
+    assert.equal(suspendRes.status, 200);
 
-    const downloadBtn = await page.$('.btn-download-qr');
-    assert(downloadBtn !== null, 'Download QR button must exist');
-    await downloadBtn.click();
-    console.log(`  ✓ Download QR validated: generated PNG data with dimensions ${downloadData.width}x${downloadData.height}`);
+    // Step 18-20: Open /r/burger-fam in fresh context and verify "Service Currently Unavailable"
+    console.log('[18-20] Opening /r/burger-fam in fresh browser context while suspended...');
+    await page.goto(`http://localhost:${PORT}/r/burger-fam`, { waitUntil: 'networkidle0' });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: 'networkidle0' });
 
-    // Step 10: Test Copy URL
-    console.log('\nStep 10: Testing "Copy URL" functionality...');
-    const copyUrlBtn = await page.$('.btn-copy-url');
-    assert(copyUrlBtn !== null, 'Copy URL button must exist');
+    await page.waitForSelector('.suspended-page', { timeout: 4000 });
+    const suspendedHeading = await page.$eval('.suspended-page h2', el => el.textContent.trim());
+    assert.equal(suspendedHeading, 'Service Currently Unavailable');
 
-    await copyUrlBtn.click();
-    await new Promise(r => setTimeout(r, 200));
+    // Verify star rating and review flow are NOT accessible
+    const starButtons = await page.$$('.star-button');
+    assert.equal(starButtons.length, 0, 'Star buttons must not be rendered when suspended');
+    console.log('  ✓ "Service Currently Unavailable" state rendered correctly; review flow blocked');
 
-    const copyBtnText = await page.evaluate(el => el.textContent.trim(), copyUrlBtn);
-    assert(copyBtnText.includes('Copied ✓'), `Button text should be 'Copied ✓', got: ${copyBtnText}`);
-    console.log('  ✓ Copy URL button transitions to "Copied ✓" state');
+    // Step 21-22: Reactivate Burger Fam status to "active" and verify recovery
+    console.log('\n[21-22] Reactivating "Burger Fam" to "active" status and verifying recovery...');
+    const reactivateRes = await fetch(`http://localhost:${PORT}/api/businesses/burger-fam/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'active' })
+    });
+    assert.equal(reactivateRes.status, 200);
 
-    console.log('\n🎉 ALL 10 USER TEST REQUIREMENTS PASSED SUCCESSFULLY!\n');
+    await page.reload({ waitUntil: 'networkidle0' });
+    await page.waitForSelector('.shop-header', { timeout: 4000 });
+    const reactivatedTitle = await page.$eval('.shop-name', el => el.textContent.trim());
+    assert.equal(reactivatedTitle, 'Burger Fam');
+    const reactivatedStars = await page.$$('.star-button');
+    assert.equal(reactivatedStars.length, 5, 'Star buttons must be restored when reactivated');
+    console.log('  ✓ Active review flow restored successfully upon reactivation');
+
+    console.log('\n🎉 ALL 22 STAGE 1 END-TO-END VERIFICATION STEPS PASSED!\n');
   } catch (err) {
     console.error('❌ E2E Test Failed:', err);
     process.exitCode = 1;
   } finally {
+    // Clean up temporary test business from MongoDB Atlas
+    try {
+      console.log('🧹 Cleaning up temporary test business ("burger-fam") from Atlas...');
+      await deleteBusinessBySlug('burger-fam');
+      console.log('  ✓ Cleaned up "burger-fam" from Atlas');
+      await closeDb();
+    } catch (_) {}
+
     if (browser) await browser.close();
     server.close();
   }

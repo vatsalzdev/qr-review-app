@@ -37,27 +37,22 @@ export default function ReviewDraft({
     if (success) {
       setCopied(true);
       setCopyFailed(false);
-      setTimeout(() => setCopied(false), 4000);
+
+      // Open Google review URL after exactly 800ms
+      if (googleReviewUrl) {
+        setTimeout(() => {
+          window.open(googleReviewUrl, '_blank');
+        }, 800);
+      }
     } else {
       setCopyFailed(true);
-    }
-
-    // 2. Open configured Google review URL in a new tab
-    if (googleReviewUrl) {
-      window.open(googleReviewUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
   return (
     <div className="review-draft-container animate-fade-in" role="region" aria-label="Review draft">
       <div className="section-header">
-        <div className="draft-header-row">
-          <h3 className="section-title">Your review draft</h3>
-          <span className="badge-rating">{rating} ★ rating</span>
-        </div>
-        <p className="draft-subtitle">
-          Generated based purely on what you shared. Feel free to edit below before submitting.
-        </p>
+        <h3 className="section-title">Your review</h3>
       </div>
 
       <div className="draft-box-wrapper">
@@ -71,21 +66,23 @@ export default function ReviewDraft({
       </div>
 
       <div className="actions-container">
-        {/* Single Primary Action Button */}
+        {/* Confirmation message — appears immediately above the button when clicked */}
+        {copied && (
+          <p className="copy-confirm-message" role="status" aria-live="polite">
+            Review copied — opening Google…
+          </p>
+        )}
+
+        {/* Primary Action Button */}
         <button
           type="button"
           onClick={handleCopyAndLeaveReview}
+          disabled={copied}
           className={`btn btn-primary-review ${copied ? 'btn-copied-state' : ''}`}
           aria-label="Copy review and open Google review page"
         >
-          <span>{copied ? 'Copied ✓ & Opening Google' : 'Copy & Leave Review'}</span>
-          <span className="btn-arrow">→</span>
+          <span>{copied ? '✓ Review Copied!' : 'Copy & Leave Review →'}</span>
         </button>
-
-        {/* Subtle helper text */}
-        <p className={`subtle-helper-text ${copied ? 'helper-active' : ''}`}>
-          Your review has been copied. Paste it on Google and submit your rating.
-        </p>
 
         {/* Graceful clipboard failure message */}
         {copyFailed && (

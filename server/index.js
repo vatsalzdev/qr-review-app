@@ -1,11 +1,16 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from './routes/api.js';
+import { initDb } from './db/mongo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize database connection
+initDb();
 
 const app = express();
 const PORT = process.env.PORT || 5000;

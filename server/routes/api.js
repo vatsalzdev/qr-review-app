@@ -1,36 +1,139 @@
 import express from 'express';
-import { getBusinessBySlug, getAllBusinesses, updateBusinessGoogleUrl } from '../data/businesses.js';
+import {
+  getBusinessBySlug,
+  getAllBusinesses,
+  createBusiness,
+  updateBusinessStatus,
+  updateBusinessGoogleUrl
+} from '../db/mongo.js';
+import { generateReviewWithAi } from '../services/aiReviewService.js';
 
 const router = express.Router();
 
+function slugify(text) {
+  return String(text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // Get all configured businesses
-router.get('/businesses', (req, res) => {
-  res.json({
-    success: true,
-    data: getAllBusinesses()
-  });
+router.get('/businesses', async (req, res) => {
+  try {
+    const list = await getAllBusinesses();
+    res.json({
+      success: true,
+      data: list
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch businesses' });
+  }
 });
 
 // Get single business by slug (e.g. /api/businesses/royal-cafe)
-router.get('/businesses/:slug', (req, res) => {
+router.get('/businesses/:slug', async (req, res) => {
   const { slug } = req.params;
-  const business = getBusinessBySlug(slug);
+  try {
+    const business = await getBusinessBySlug(slug);
 
-  if (!business) {
-    return res.status(404).json({
+    if (!business) {
+      return res.status(404).json({
+        success: false,
+        error: `Business with slug "${slug}" not found`
+      });
+    }
+
+    res.json({
+      success: true,
+      data: business
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Database error fetching business' });
+  }
+});
+
+// Create a new business in MongoDB
+router.post('/businesses', async (req, res) => {
+  try {
+    const { name, googleReviewUrl, slug, aiContext, type } = req.body || {};
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Business name is required'
+      });
+    }
+
+    if (!googleReviewUrl || typeof googleReviewUrl !== 'string' || !googleReviewUrl.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid Google review URL is required'
+      });
+    }
+
+    const businessSlug = (slug && typeof slug === 'string' ? slug.trim() : slugify(name));
+    if (!businessSlug) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not generate a valid slug from business name'
+      });
+    }
+
+    const created = await createBusiness({
+      name: name.trim(),
+      slug: businessSlug,
+      googleReviewUrl: googleReviewUrl.trim(),
+      aiContext: aiContext || '',
+      type: type || 'business'
+    });
+
+    res.status(201).json({
+      success: true,
+      data: created
+    });
+  } catch (err) {
+    console.error('Error creating business:', err);
+    res.status(500).json({
       success: false,
-      error: `Business with slug "${slug}" not found`
+      error: 'Failed to create business in database'
+    });
+  }
+});
+
+// Update business status (e.g. "active" | "suspended")
+router.patch('/businesses/:slug/status', async (req, res) => {
+  const { slug } = req.params;
+  const { status } = req.body || {};
+
+  if (!status || !['active', 'suspended'].includes(status)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Status must be either "active" or "suspended"'
     });
   }
 
-  res.json({
-    success: true,
-    data: business
-  });
+  try {
+    const updated = await updateBusinessStatus(slug, status);
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        error: `Business with slug "${slug}" not found`
+      });
+    }
+
+    res.json({
+      success: true,
+      data: updated
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update business status' });
+  }
 });
 
 // Update Google review URL (allows quick testing of custom business URLs)
-router.patch('/businesses/:slug', (req, res) => {
+router.patch('/businesses/:slug', async (req, res) => {
   const { slug } = req.params;
   const { googleReviewUrl } = req.body;
 
@@ -41,19 +144,54 @@ router.patch('/businesses/:slug', (req, res) => {
     });
   }
 
-  const updated = updateBusinessGoogleUrl(slug, googleReviewUrl.trim());
+  try {
+    const updated = await updateBusinessGoogleUrl(slug, googleReviewUrl.trim());
 
-  if (!updated) {
-    return res.status(404).json({
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        error: `Business with slug "${slug}" not found`
+      });
+    }
+
+    res.json({
+      success: true,
+      data: updated
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update Google review URL' });
+  }
+});
+
+// AI Review Generation endpoint
+router.post(['/generate-review', '/reviews/generate'], async (req, res) => {
+  try {
+    const { businessName, rating } = req.body || {};
+
+    if (!rating || Number(rating) < 1 || Number(rating) > 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'A rating between 1 and 5 is required'
+      });
+    }
+
+    const review = await generateReviewWithAi({
+      businessName: typeof businessName === 'string' ? businessName : '',
+      rating: Number(rating)
+    });
+
+    res.json({
+      success: true,
+      review,
+      data: { review }
+    });
+  } catch (err) {
+    console.error('Error in review generation endpoint:', err);
+    res.status(500).json({
       success: false,
-      error: `Business with slug "${slug}" not found`
+      error: 'Failed to generate review'
     });
   }
-
-  res.json({
-    success: true,
-    data: updated
-  });
 });
 
 export default router;

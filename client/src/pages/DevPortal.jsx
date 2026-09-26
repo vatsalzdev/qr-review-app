@@ -1,45 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { generateSlug } from '../utils/slugify';
-import {
-  saveCustomBusiness,
-  getBusinessBySlug,
-  getAllBusinesses,
-  getStoredCustomBusinesses
-} from '../data/businesses';
 
 export default function DevPortal() {
   const [businessName, setBusinessName] = useState('');
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [activeBusiness, setActiveBusiness] = useState(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const [historyList, setHistoryList] = useState([]);
   const [currentOrigin, setCurrentOrigin] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  // Dynamically resolve current browser origin
+  // Dynamically resolve current browser origin and load recent business from MongoDB
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setCurrentOrigin(window.location.origin);
     }
 
-    // Load any previously created or preset businesses
-    const all = getAllBusinesses();
-    setHistoryList(all);
-
-    // If there is an active business or created businesses in localStorage, show the most recent one
-    const custom = getStoredCustomBusinesses();
-    const customKeys = Object.keys(custom);
-    if (customKeys.length > 0) {
-      const mostRecentKey = customKeys[customKeys.length - 1];
-      setActiveBusiness(custom[mostRecentKey]);
-    } else if (all.length > 0) {
-      setActiveBusiness(all[0]);
+    async function fetchRecentBusiness() {
+      try {
+        const lastSlug = typeof window !== 'undefined' ? localStorage.getItem('qr_review_last_active_slug') : null;
+        if (lastSlug) {
+          const res = await fetch(`/api/businesses/${lastSlug}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && json.data) {
+              setActiveBusiness(json.data);
+              return;
+            }
+          }
+        }
+        // Fallback: fetch list and take the last configured business
+        const resList = await fetch('/api/businesses');
+        if (resList.ok) {
+          const jsonList = await resList.json();
+          if (jsonList.success && Array.isArray(jsonList.data) && jsonList.data.length > 0) {
+            setActiveBusiness(jsonList.data[jsonList.data.length - 1]);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load recent business from database:', err);
+      }
     }
+
+    fetchRecentBusiness();
   }, []);
 
   const previewSlug = generateSlug(businessName);
 
-  const handleGenerate = (e) => {
+  const handleGenerate = async (e) => {
     e.preventDefault();
     const trimmedName = businessName.trim();
     const trimmedUrl = googleReviewUrl.trim();
@@ -49,34 +58,42 @@ export default function DevPortal() {
     const slug = generateSlug(trimmedName);
     if (!slug) return;
 
-    // Save to local browser storage (localStorage)
-    const saved = saveCustomBusiness({
-      name: trimmedName,
-      slug,
-      googleReviewUrl: trimmedUrl
-    });
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    setActiveBusiness(saved);
-    setHistoryList(getAllBusinesses());
-  };
+    try {
+      const res = await fetch('/api/businesses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: trimmedName,
+          slug,
+          googleReviewUrl: trimmedUrl
+        })
+      });
 
-  const handleSelectHistory = (slug) => {
-    const biz = getBusinessBySlug(slug);
-    if (biz) {
-      setActiveBusiness(biz);
+      if (!res.ok) {
+        throw new Error(`Failed to create business (status ${res.status})`);
+      }
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        setActiveBusiness(data.data);
+        try {
+          localStorage.setItem('qr_review_last_active_slug', data.data.slug);
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.error('Error creating business:', err);
+      setSubmitError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Build a self-contained customer URL: business data is embedded as query params
-  // so any phone scanning the QR can load the page without localStorage.
+  // Permanent, clean slug-only URL: no query parameters attached
   const customerUrl = activeBusiness && currentOrigin
-    ? (() => {
-        const params = new URLSearchParams({
-          name: activeBusiness.name,
-          google: activeBusiness.googleReviewUrl,
-        });
-        return `${currentOrigin}/r/${activeBusiness.slug}?${params.toString()}`;
-      })()
+    ? `${currentOrigin}/r/${activeBusiness.slug}`
     : '';
 
   const handleDownloadQR = () => {
@@ -243,29 +260,6 @@ export default function DevPortal() {
               <span>Open Customer Flow</span>
               <span className="btn-arrow">→</span>
             </a>
-          </div>
-        </section>
-      )}
-
-      {/* 3. Previously Created / Available Businesses */}
-      {historyList.length > 0 && (
-        <section className="saved-businesses-section">
-          <h3 className="section-title-sm">Available Businesses ({historyList.length})</h3>
-          <div className="business-pills-row">
-            {historyList.map((b) => {
-              const isSelected = activeBusiness?.slug === b.slug;
-              return (
-                <button
-                  key={b.slug}
-                  type="button"
-                  onClick={() => handleSelectHistory(b.slug)}
-                  className={`history-pill-btn ${isSelected ? 'history-pill-active' : ''}`}
-                >
-                  <span className="pill-name">{b.name}</span>
-                  <span className="pill-slug">/r/{b.slug}</span>
-                </button>
-              );
-            })}
           </div>
         </section>
       )}
