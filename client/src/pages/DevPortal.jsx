@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { generateSlug } from '../utils/slugify';
+import { saveCustomBusiness } from '../data/businesses';
 
 export default function DevPortal() {
   const [businessName, setBusinessName] = useState('');
@@ -76,16 +77,34 @@ export default function DevPortal() {
         throw new Error(`Failed to create business (status ${res.status})`);
       }
 
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Expected JSON response, got ${contentType}`);
+      }
+
       const data = await res.json();
       if (data.success && data.data) {
         setActiveBusiness(data.data);
+        saveCustomBusiness(data.data);
         try {
           localStorage.setItem('qr_review_last_active_slug', data.data.slug);
         } catch (_) {}
+        return;
       }
+      throw new Error('Invalid business creation response');
     } catch (err) {
-      console.error('Error creating business:', err);
-      setSubmitError(err.message);
+      console.warn('API business creation unavailable, using local persistence fallback:', err.message);
+      // Fallback: render QR code immediately using locally persisted business configuration
+      const fallbackBiz = saveCustomBusiness({
+        name: trimmedName,
+        slug,
+        googleReviewUrl: trimmedUrl,
+        status: 'active'
+      });
+      setActiveBusiness(fallbackBiz);
+      try {
+        localStorage.setItem('qr_review_last_active_slug', slug);
+      } catch (_) {}
     } finally {
       setIsSubmitting(false);
     }

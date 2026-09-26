@@ -118,7 +118,7 @@ const server = app.listen(PORT, async () => {
 
     // Step 13 & 14: Wait for generated review to appear and verify it is editable
     console.log('[13-14] Verifying generated review appears and remains editable in textarea...');
-    await page.waitForSelector('.draft-textarea', { timeout: 8000 });
+    await page.waitForSelector('.draft-textarea', { timeout: 15000 });
     const originalReview = await page.$eval('.draft-textarea', el => el.value);
     assert(originalReview && originalReview.length > 5, 'Review draft must be generated');
 

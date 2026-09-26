@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import StarRating from '../components/StarRating';
 import ReviewDraft from '../components/ReviewDraft';
 import ReviewGenerationAnimation from '../components/ReviewGenerationAnimation';
+import { getBusinessBySlug } from '../data/businesses';
+import { generateReview } from '../services/reviewGenerator';
 
 const TYPE_EMOJI_MAP = {
   'waffle shop': '🧇',
@@ -45,13 +47,22 @@ export default function CustomerReviewPage({ slug }) {
         if (!res.ok) {
           throw new Error(res.status === 404 ? 'Business not found' : 'Failed to load business');
         }
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('Expected JSON response');
+        }
         const data = await res.json();
         if (data.success && data.data) {
           setBusiness(data.data);
-        } else {
-          throw new Error('Business not found');
+          return;
         }
+        throw new Error('Business not found');
       } catch (err) {
+        const local = getBusinessBySlug(slug);
+        if (local) {
+          setBusiness(local);
+          return;
+        }
         setError(err.message);
         setBusiness(null);
       } finally {
@@ -94,6 +105,11 @@ export default function CustomerReviewPage({ slug }) {
         throw new Error(`Generation failed with status ${res.status}`);
       }
 
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Expected JSON response, got ${contentType}`);
+      }
+
       const data = await res.json();
       if (requestId === latestRequestId.current) {
         const generated = data.review || data.data?.review || '';
@@ -119,6 +135,25 @@ export default function CustomerReviewPage({ slug }) {
       if (err.name === 'AbortError') {
         return;
       }
+      try {
+        const localReview = generateReview({
+          businessName: business?.name || 'this business',
+          rating: targetRating
+        });
+        if (localReview && requestId === latestRequestId.current) {
+          const elapsed = Date.now() - requestStartTimeRef.current;
+          const minStreamDuration = 500;
+          const delay = Math.max(0, minStreamDuration - elapsed);
+
+          setTimeout(() => {
+            if (requestId === latestRequestId.current) {
+              setPendingReview(localReview);
+              setGenerationState('revealing');
+            }
+          }, delay);
+          return;
+        }
+      } catch (_) {}
       if (requestId === latestRequestId.current) {
         setGenerationError('Unable to generate review automatically. Please try again.');
         setGenerationState('error');
