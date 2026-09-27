@@ -141,8 +141,10 @@ const server = app.listen(PORT, async () => {
     await submitReviewBtn.click();
 
     // Verify immediate UI transition to "✓ Review Copied!"
-    const btnTextAfterClick = await page.$eval('.btn-primary-review', el => el.textContent.trim());
-    assert(btnTextAfterClick.includes('Review Copied'), 'Button should switch to copied state');
+    await page.waitForFunction(() => {
+      const btn = document.querySelector('.btn-primary-review');
+      return btn && btn.textContent.includes('Review Copied');
+    }, { timeout: 3000 });
 
     // Wait for the intentional 800ms navigation delay before Google URL opens
     await new Promise(r => setTimeout(r, 1000));

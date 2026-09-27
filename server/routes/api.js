@@ -4,7 +4,9 @@ import {
   getAllBusinesses,
   createBusiness,
   updateBusinessStatus,
-  updateBusinessGoogleUrl
+  updateBusinessGoogleUrl,
+  getDbInfo,
+  initDb
 } from '../db/mongo.js';
 import { generateReviewWithAi } from '../services/aiReviewService.js';
 
@@ -18,6 +20,20 @@ function slugify(text) {
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+// Diagnostic endpoint to check database connection status safely without exposing secrets
+router.get(['/db-status', '/health'], async (req, res) => {
+  if (process.env.MONGODB_URI && !getDbInfo().isConnected) {
+    try {
+      await initDb();
+    } catch (_) {}
+  }
+  const dbInfo = getDbInfo();
+  res.json({
+    success: true,
+    ...dbInfo
+  });
+});
 
 // Get all configured businesses
 router.get('/businesses', async (req, res) => {
@@ -94,10 +110,11 @@ router.post('/businesses', async (req, res) => {
       data: created
     });
   } catch (err) {
-    console.error('Error creating business:', err);
-    res.status(500).json({
+    console.error('Error creating business:', err.message);
+    const isDbUnavailable = err.message && err.message.includes('Database is currently unavailable');
+    res.status(isDbUnavailable ? 503 : 500).json({
       success: false,
-      error: 'Failed to create business in database'
+      error: 'Business could not be saved. Please try again.'
     });
   }
 });

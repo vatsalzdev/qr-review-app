@@ -167,14 +167,17 @@ export default function CustomerReviewPage({ slug }) {
   }, [pendingReview]);
 
   const handleRatingSelect = (newRating) => {
+    const isFirstRating = rating === 0;
     setRating(newRating);
     fetchAiReview(newRating);
 
-    setTimeout(() => {
-      if (reviewSectionRef.current) {
-        reviewSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 120);
+    if (isFirstRating) {
+      setTimeout(() => {
+        if (reviewSectionRef.current) {
+          reviewSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 120);
+    }
   };
 
   if (loading) {

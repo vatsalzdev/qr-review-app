@@ -1,10 +1,11 @@
+import 'dotenv/config';
 import assert from 'node:assert/strict';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from '../server/routes/api.js';
-import { deleteBusinessBySlug, closeDb } from '../server/db/mongo.js';
+import { initDb, deleteBusinessBySlug, closeDb } from '../server/db/mongo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +29,23 @@ const server = app.listen(TEST_PORT, async () => {
   console.log(`📡 Multi-Business API Test Server running on port ${TEST_PORT}`);
 
   try {
+    // Initialize database if MONGODB_URI is provided
+    try {
+      await initDb();
+    } catch (err) {
+      console.warn('Test runner initDb note:', err.message);
+    }
+
+    // 0. Test GET /api/db-status (Diagnostic endpoint)
+    console.log('Testing GET /api/db-status...');
+    const resDbStatus = await fetch(`http://localhost:${TEST_PORT}/api/db-status`);
+    assert.equal(resDbStatus.status, 200);
+    const dataDbStatus = await resDbStatus.json();
+    assert.equal(dataDbStatus.success, true);
+    assert(typeof dataDbStatus.isConfigured === 'boolean');
+    assert(typeof dataDbStatus.isConnected === 'boolean');
+    console.log('  ✓ GET /api/db-status verified (isConfigured:', dataDbStatus.isConfigured, ', isConnected:', dataDbStatus.isConnected, ')');
+
     // 1. Test GET /api/businesses (should return multiple businesses)
     console.log('Testing GET /api/businesses...');
     const resList = await fetch(`http://localhost:${TEST_PORT}/api/businesses`);
@@ -105,14 +123,15 @@ const server = app.listen(TEST_PORT, async () => {
     assert(dataCreate.data.updatedAt);
     console.log('  ✓ POST /api/businesses successfully created "Burger Fam" with status: active');
 
-    // 7. Test GET /api/businesses/burger-fam (Active business loads)
-    console.log('Testing GET /api/businesses/burger-fam (Active business loads)...');
+    // 7. Test GET /api/businesses/burger-fam (Active business loads and actually exists)
+    console.log('Testing GET /api/businesses/burger-fam (Proving business exists via GET)...');
     const resGetCreated = await fetch(`http://localhost:${TEST_PORT}/api/businesses/burger-fam`);
     assert.equal(resGetCreated.status, 200);
     const dataGetCreated = await resGetCreated.json();
     assert.equal(dataGetCreated.data.slug, 'burger-fam');
+    assert.equal(dataGetCreated.data.name, 'Burger Fam');
     assert.equal(dataGetCreated.data.status, 'active');
-    console.log('  ✓ GET /api/businesses/burger-fam loaded active business configuration');
+    console.log('  ✓ Business confirmed to exist via GET /api/businesses/:slug');
 
     // 8. Test PATCH /api/businesses/burger-fam/status (Suspend business)
     console.log('Testing PATCH /api/businesses/burger-fam/status (Suspend business)...');
@@ -139,7 +158,20 @@ const server = app.listen(TEST_PORT, async () => {
     assert.equal(data404.success, false);
     console.log('  ✓ Unknown slug correctly returns HTTP 404');
 
-    // 10. Test SPA dynamic route serving
+    // 10. Test validation error handling for POST /api/businesses
+    console.log('Testing POST /api/businesses validation error handling...');
+    const resInvalid = await fetch(`http://localhost:${TEST_PORT}/api/businesses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '' })
+    });
+    assert.equal(resInvalid.status, 400);
+    const dataInvalid = await resInvalid.json();
+    assert.equal(dataInvalid.success, false);
+    assert.equal(dataInvalid.error, 'Business name is required');
+    console.log('  ✓ POST /api/businesses correctly rejects missing name with 400');
+
+    // 11. Test SPA dynamic route serving
     for (const testSlug of ['demo-waffle-shop', 'royal-cafe', 'fresh-mart', 'burger-fam']) {
       const resRoute = await fetch(`http://localhost:${TEST_PORT}/r/${testSlug}`);
       assert.equal(resRoute.status, 200);
@@ -148,7 +180,7 @@ const server = app.listen(TEST_PORT, async () => {
     }
     console.log('  ✓ All /r/:businessSlug SPA routes serve valid HTML');
 
-    // 7. Test POST /api/generate-review
+    // 12. Test POST /api/generate-review
     console.log('Testing POST /api/generate-review...');
     const resGen = await fetch(`http://localhost:${TEST_PORT}/api/generate-review`, {
       method: 'POST',

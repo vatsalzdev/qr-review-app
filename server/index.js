@@ -10,7 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize database connection
-initDb();
+initDb().catch((err) => {
+  console.warn('Backend server initDb warning:', err.message);
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;

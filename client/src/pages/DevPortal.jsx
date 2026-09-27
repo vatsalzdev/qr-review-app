@@ -73,17 +73,18 @@ export default function DevPortal() {
         })
       });
 
-      if (!res.ok) {
-        throw new Error(`Failed to create business (status ${res.status})`);
-      }
-
       const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error(`Expected JSON response, got ${contentType}`);
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await res.json();
       }
 
-      const data = await res.json();
-      if (data.success && data.data) {
+      if (!res.ok) {
+        const errorMsg = (data && data.error) ? data.error : 'Business could not be saved. Please try again.';
+        throw new Error(errorMsg);
+      }
+
+      if (data && data.success && data.data) {
         setActiveBusiness(data.data);
         saveCustomBusiness(data.data);
         try {
@@ -91,20 +92,11 @@ export default function DevPortal() {
         } catch (_) {}
         return;
       }
-      throw new Error('Invalid business creation response');
+      throw new Error((data && data.error) || 'Business could not be saved. Please try again.');
     } catch (err) {
-      console.warn('API business creation unavailable, using local persistence fallback:', err.message);
-      // Fallback: render QR code immediately using locally persisted business configuration
-      const fallbackBiz = saveCustomBusiness({
-        name: trimmedName,
-        slug,
-        googleReviewUrl: trimmedUrl,
-        status: 'active'
-      });
-      setActiveBusiness(fallbackBiz);
-      try {
-        localStorage.setItem('qr_review_last_active_slug', slug);
-      } catch (_) {}
+      console.error('Error creating business:', err.message);
+      setSubmitError(err.message || 'Business could not be saved. Please try again.');
+      setActiveBusiness(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -161,6 +153,13 @@ export default function DevPortal() {
         </header>
 
         <form onSubmit={handleGenerate} className="create-qr-form">
+          {submitError && (
+            <div className="submit-error-banner" role="alert">
+              <span className="error-icon-small">⚠️</span>
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="business-name" className="form-label">
               Business Name
@@ -169,7 +168,10 @@ export default function DevPortal() {
               id="business-name"
               type="text"
               value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
+              onChange={(e) => {
+                setBusinessName(e.target.value);
+                if (submitError) setSubmitError(null);
+              }}
               placeholder="e.g. Royal Cafe"
               required
               className="form-input"
@@ -189,15 +191,18 @@ export default function DevPortal() {
               id="google-review-url"
               type="url"
               value={googleReviewUrl}
-              onChange={(e) => setGoogleReviewUrl(e.target.value)}
+              onChange={(e) => {
+                setGoogleReviewUrl(e.target.value);
+                if (submitError) setSubmitError(null);
+              }}
               placeholder="https://search.google.com/local/writereview?placeid=..."
               required
               className="form-input"
             />
           </div>
 
-          <button type="submit" className="btn-generate-qr">
-            Generate QR
+          <button type="submit" className="btn-generate-qr" disabled={isSubmitting}>
+            {isSubmitting ? 'Generating QR...' : 'Generate QR'}
           </button>
         </form>
       </div>
