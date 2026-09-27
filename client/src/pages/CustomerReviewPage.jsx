@@ -4,15 +4,7 @@ import ReviewDraft from '../components/ReviewDraft';
 import ReviewGenerationAnimation from '../components/ReviewGenerationAnimation';
 import { getBusinessBySlug } from '../data/businesses';
 import { generateReview } from '../services/reviewGenerator';
-
-const TYPE_EMOJI_MAP = {
-  'waffle shop': '🧇',
-  'cafe': '☕',
-  'grocery store': '🛒',
-  'cocktail bar': '🍸',
-  'restaurant': '🍽️',
-  'bar': '🍻'
-};
+import { getBusinessPresentation } from '../utils/businessPersonalization';
 
 export default function CustomerReviewPage({ slug }) {
   const [business, setBusiness] = useState(null);
@@ -32,6 +24,12 @@ export default function CustomerReviewPage({ slug }) {
 
   // Fetch business configuration from backend MongoDB by slug
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.__qrPerf = window.__qrPerf || {};
+      window.__qrPerf.mountTime = performance.now();
+      window.__qrPerf.businessFetchStart = performance.now();
+    }
+
     // Reset review-interaction state when navigating to a different business
     setRating(0);
     setReviewText('');
@@ -53,6 +51,11 @@ export default function CustomerReviewPage({ slug }) {
         }
         const data = await res.json();
         if (data.success && data.data) {
+          if (typeof window !== 'undefined') {
+            window.__qrPerf.businessFetchEnd = performance.now();
+            window.__qrPerf.businessLookupMs = Math.round(window.__qrPerf.businessFetchEnd - window.__qrPerf.businessFetchStart);
+            window.__qrPerf.pageInteractiveTime = performance.now();
+          }
           setBusiness(data.data);
           return;
         }
@@ -60,6 +63,11 @@ export default function CustomerReviewPage({ slug }) {
       } catch (err) {
         const local = getBusinessBySlug(slug);
         if (local) {
+          if (typeof window !== 'undefined') {
+            window.__qrPerf.businessFetchEnd = performance.now();
+            window.__qrPerf.businessLookupMs = Math.round(window.__qrPerf.businessFetchEnd - window.__qrPerf.businessFetchStart);
+            window.__qrPerf.pageInteractiveTime = performance.now();
+          }
           setBusiness(local);
           return;
         }
@@ -86,6 +94,11 @@ export default function CustomerReviewPage({ slug }) {
     const requestId = ++latestRequestId.current;
     requestStartTimeRef.current = Date.now();
 
+    if (typeof window !== 'undefined') {
+      window.__qrPerf = window.__qrPerf || {};
+      window.__qrPerf.aiRequestStart = performance.now();
+    }
+
     setGenerationState('generating');
     setPendingReview('');
     setGenerationError(null);
@@ -96,7 +109,10 @@ export default function CustomerReviewPage({ slug }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName: business?.name || '',
-          rating: targetRating
+          rating: targetRating,
+          businessType: business?.type || '',
+          aiContext: business?.aiContext || '',
+          slug: business?.slug || slug || ''
         }),
         signal: controller.signal
       });
@@ -111,6 +127,14 @@ export default function CustomerReviewPage({ slug }) {
       }
 
       const data = await res.json();
+      if (typeof window !== 'undefined') {
+        window.__qrPerf.aiResponseEnd = performance.now();
+        window.__qrPerf.aiLatencyMs = Math.round(window.__qrPerf.aiResponseEnd - window.__qrPerf.aiRequestStart);
+        if (data._perf) {
+          window.__qrPerf.serverPerf = data._perf;
+        }
+      }
+
       if (requestId === latestRequestId.current) {
         const generated = data.review || data.data?.review || '';
         if (!generated) {
@@ -162,11 +186,22 @@ export default function CustomerReviewPage({ slug }) {
   }, [business?.name]);
 
   const handleRevealComplete = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.__qrPerf = window.__qrPerf || {};
+      window.__qrPerf.reviewUsableTime = performance.now();
+      if (window.__qrPerf.ratingTapTime) {
+        window.__qrPerf.ratingToReviewMs = Math.round(window.__qrPerf.reviewUsableTime - window.__qrPerf.ratingTapTime);
+      }
+    }
     setReviewText(pendingReview);
     setGenerationState('ready');
   }, [pendingReview]);
 
   const handleRatingSelect = (newRating) => {
+    if (typeof window !== 'undefined') {
+      window.__qrPerf = window.__qrPerf || {};
+      window.__qrPerf.ratingTapTime = performance.now();
+    }
     const isFirstRating = rating === 0;
     setRating(newRating);
     fetchAiReview(newRating);
@@ -174,9 +209,9 @@ export default function CustomerReviewPage({ slug }) {
     if (isFirstRating) {
       setTimeout(() => {
         if (reviewSectionRef.current) {
-          reviewSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          reviewSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-      }, 120);
+      }, 100);
     }
   };
 
@@ -212,20 +247,19 @@ export default function CustomerReviewPage({ slug }) {
     );
   }
 
-  const avatar = TYPE_EMOJI_MAP[business.type?.toLowerCase()] || '🏪';
+  const presentation = getBusinessPresentation(business.type);
+  const avatar = presentation.icon;
 
   return (
     <div className="mobile-wrapper">
-      <main className="mobile-canvas">
+      <main className={`mobile-canvas ${presentation.themeClass}`}>
         {/* Reusable Header */}
         <header className="shop-header">
-          <div className="shop-avatar">
+          <div className="shop-avatar" aria-hidden="true">
             <span>{avatar}</span>
           </div>
           <h1 className="shop-name">{business.name}</h1>
-          {business.type && (
-            <span className="business-type-pill">{business.type}</span>
-          )}
+          <span className="business-type-pill">{presentation.label}</span>
         </header>
 
         {/* 1. Star Rating Selection */}
@@ -234,6 +268,7 @@ export default function CustomerReviewPage({ slug }) {
             rating={rating}
             onRatingChange={handleRatingSelect}
             businessName={business.name}
+            promptPrefix={presentation.promptPrefix}
           />
         </section>
 
@@ -241,7 +276,7 @@ export default function CustomerReviewPage({ slug }) {
         {rating > 0 && (
           <div ref={reviewSectionRef} className="step-section">
             {(generationState === 'generating' || generationState === 'revealing') && (
-              <section className="step-card animate-fade-in" aria-live="polite">
+              <section className="step-card animate-generation-surface" aria-live="polite">
                 <ReviewGenerationAnimation
                   state={generationState}
                   rating={rating}
@@ -268,7 +303,7 @@ export default function CustomerReviewPage({ slug }) {
             )}
 
             {generationState === 'ready' && reviewText && (
-              <section className="step-card animate-fade-in">
+              <section className="step-card animate-draft-morph">
                 <ReviewDraft
                   key={rating}
                   reviewText={reviewText}

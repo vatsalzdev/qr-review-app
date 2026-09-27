@@ -50,9 +50,12 @@ router.get('/businesses', async (req, res) => {
 
 // Get single business by slug (e.g. /api/businesses/royal-cafe)
 router.get('/businesses/:slug', async (req, res) => {
+  const reqStart = performance.now();
   const { slug } = req.params;
   try {
+    const dbStart = performance.now();
     const business = await getBusinessBySlug(slug);
+    const dbLookupMs = Math.round(performance.now() - dbStart);
 
     if (!business) {
       return res.status(404).json({
@@ -61,9 +64,12 @@ router.get('/businesses/:slug', async (req, res) => {
       });
     }
 
+    const totalMs = Math.round(performance.now() - reqStart);
+    res.set('Server-Timing', `db;dur=${dbLookupMs}, total;dur=${totalMs}`);
     res.json({
       success: true,
-      data: business
+      data: business,
+      _perf: { dbLookupMs, totalMs }
     });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Database error fetching business' });
@@ -182,8 +188,9 @@ router.patch('/businesses/:slug', async (req, res) => {
 
 // AI Review Generation endpoint
 router.post(['/generate-review', '/reviews/generate'], async (req, res) => {
+  const reqStart = performance.now();
   try {
-    const { businessName, rating } = req.body || {};
+    const { businessName, rating, businessType, type, aiContext, slug } = req.body || {};
 
     if (!rating || Number(rating) < 1 || Number(rating) > 5) {
       return res.status(400).json({
@@ -192,15 +199,32 @@ router.post(['/generate-review', '/reviews/generate'], async (req, res) => {
       });
     }
 
-    const review = await generateReviewWithAi({
+    const result = await generateReviewWithAi({
       businessName: typeof businessName === 'string' ? businessName : '',
-      rating: Number(rating)
+      rating: Number(rating),
+      businessType: businessType || type || '',
+      aiContext: aiContext || '',
+      slug: slug || '',
+      returnDetails: true
     });
 
+    const totalMs = Math.round(performance.now() - reqStart);
+    const review = result.review;
+    const metrics = result.metrics || {};
+
+    res.set('Server-Timing', `ai;dur=${metrics.aiGenerationMs || 0}, val;dur=${metrics.validationMs || 0}, total;dur=${totalMs}`);
     res.json({
       success: true,
       review,
-      data: { review }
+      data: { review },
+      _perf: {
+        aiGenerationMs: metrics.aiGenerationMs || 0,
+        validationMs: metrics.validationMs || 0,
+        retryCount: metrics.retryCount || 0,
+        fallbackUsed: Boolean(metrics.fallbackUsed),
+        modelUsed: metrics.modelUsed || 'unknown',
+        totalMs
+      }
     });
   } catch (err) {
     console.error('Error in review generation endpoint:', err);

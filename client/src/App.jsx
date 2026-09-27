@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import CustomerReviewPage from './pages/CustomerReviewPage';
-import DevPortal from './pages/DevPortal';
+
+const DevPortal = lazy(() => import('./pages/DevPortal'));
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(
@@ -52,5 +53,9 @@ export default function App() {
     return <CustomerReviewPage key={businessSlug} slug={businessSlug} />;
   }
 
-  return <DevPortal />;
+  return (
+    <Suspense fallback={<div className="mobile-canvas flex-center"><div className="loader-spinner" /><p className="loading-text">Loading...</p></div>}>
+      <DevPortal />
+    </Suspense>
+  );
 }

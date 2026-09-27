@@ -1,0 +1,405 @@
+{
+  "metadata": {
+    "targetUrl": "https://qr-review-app-2mat.vercel.app/",
+    "testedAt": "2026-09-27T18:54:43.762Z",
+    "nodeVersion": "v24.11.1"
+  },
+  "levels": {
+    "10": {
+      "concurrency": 10,
+      "targetTotal": 10,
+      "wallClockMs": 4688,
+      "throughputRps": "2.13",
+      "total": 10,
+      "successful": 10,
+      "failed": 0,
+      "successRate": "100.0%",
+      "classification": "LIMITED",
+      "statusCounts": {
+        "200": 10
+      },
+      "timeoutCount": 0,
+      "count429": 0,
+      "count4xx": 0,
+      "count5xx": 0,
+      "geminiSuccessCount": 1,
+      "geminiSuccessRate": "10.0%",
+      "fallbackCount": 9,
+      "fallbackRate": "90.0%",
+      "journeyLatencies": {
+        "p50": 4151,
+        "p90": 4619,
+        "p95": 4619,
+        "p99": 4619,
+        "min": 1207,
+        "max": 4619,
+        "avg": 3872
+      },
+      "aiLatencies": {
+        "p50": 1013,
+        "p90": 1678,
+        "p95": 1678,
+        "p99": 1678,
+        "min": 398,
+        "max": 1678,
+        "avg": 886
+      },
+      "lookupLatencies": {
+        "p50": 3277,
+        "p90": 3363,
+        "p95": 3363,
+        "p99": 3363,
+        "min": 477,
+        "max": 3363,
+        "avg": 2677
+      }
+    },
+    "50": {
+      "concurrency": 50,
+      "targetTotal": 50,
+      "wallClockMs": 6811,
+      "throughputRps": "7.34",
+      "total": 50,
+      "successful": 50,
+      "failed": 0,
+      "successRate": "100.0%",
+      "classification": "LIMITED",
+      "statusCounts": {
+        "200": 50
+      },
+      "timeoutCount": 0,
+      "count429": 0,
+      "count4xx": 0,
+      "count5xx": 0,
+      "geminiSuccessCount": 8,
+      "geminiSuccessRate": "16.0%",
+      "fallbackCount": 42,
+      "fallbackRate": "84.0%",
+      "journeyLatencies": {
+        "p50": 4480,
+        "p90": 4758,
+        "p95": 4764,
+        "p99": 6792,
+        "min": 1287,
+        "max": 6792,
+        "avg": 3421
+      },
+      "aiLatencies": {
+        "p50": 484,
+        "p90": 2139,
+        "p95": 2222,
+        "p99": 3142,
+        "min": 370,
+        "max": 3142,
+        "avg": 724
+      },
+      "lookupLatencies": {
+        "p50": 3646,
+        "p90": 3711,
+        "p95": 3719,
+        "p99": 3751,
+        "min": 454,
+        "max": 3751,
+        "avg": 2278
+      }
+    },
+    "100": {
+      "concurrency": 100,
+      "targetTotal": 100,
+      "wallClockMs": 8306,
+      "throughputRps": "12.04",
+      "total": 100,
+      "successful": 100,
+      "failed": 0,
+      "successRate": "100.0%",
+      "classification": "LIMITED",
+      "statusCounts": {
+        "200": 100
+      },
+      "timeoutCount": 0,
+      "count429": 0,
+      "count4xx": 0,
+      "count5xx": 0,
+      "geminiSuccessCount": 3,
+      "geminiSuccessRate": "3.0%",
+      "fallbackCount": 97,
+      "fallbackRate": "97.0%",
+      "journeyLatencies": {
+        "p50": 1650,
+        "p90": 3603,
+        "p95": 3738,
+        "p99": 8281,
+        "min": 1402,
+        "max": 8281,
+        "avg": 2304
+      },
+      "aiLatencies": {
+        "p50": 390,
+        "p90": 1235,
+        "p95": 2313,
+        "p99": 3521,
+        "min": 334,
+        "max": 3521,
+        "avg": 608
+      },
+      "lookupLatencies": {
+        "p50": 735,
+        "p90": 2090,
+        "p95": 2110,
+        "p99": 4220,
+        "min": 455,
+        "max": 4220,
+        "avg": 1117
+      }
+    },
+    "250": {
+      "concurrency": 250,
+      "targetTotal": 250,
+      "wallClockMs": 7517,
+      "throughputRps": "33.26",
+      "total": 250,
+      "successful": 250,
+      "failed": 0,
+      "successRate": "100.0%",
+      "classification": "LIMITED",
+      "statusCounts": {
+        "200": 250
+      },
+      "timeoutCount": 0,
+      "count429": 0,
+      "count4xx": 0,
+      "count5xx": 0,
+      "geminiSuccessCount": 10,
+      "geminiSuccessRate": "4.0%",
+      "fallbackCount": 240,
+      "fallbackRate": "96.0%",
+      "journeyLatencies": {
+        "p50": 5613,
+        "p90": 7036,
+        "p95": 7364,
+        "p99": 7448,
+        "min": 1982,
+        "max": 7463,
+        "avg": 4831
+      },
+      "aiLatencies": {
+        "p50": 427,
+        "p90": 3990,
+        "p95": 4378,
+        "p99": 4509,
+        "min": 327,
+        "max": 5286,
+        "avg": 1288
+      },
+      "lookupLatencies": {
+        "p50": 1493,
+        "p90": 5368,
+        "p95": 5749,
+        "p99": 5780,
+        "min": 470,
+        "max": 5785,
+        "avg": 2311
+      }
+    },
+    "500": {
+      "concurrency": 500,
+      "targetTotal": 500,
+      "wallClockMs": 13247,
+      "throughputRps": "37.74",
+      "total": 500,
+      "successful": 377,
+      "failed": 123,
+      "successRate": "75.4%",
+      "classification": "LIMITED",
+      "statusCounts": {
+        "200": 377,
+        "client_err": 123
+      },
+      "timeoutCount": 0,
+      "count429": 0,
+      "count4xx": 0,
+      "count5xx": 0,
+      "geminiSuccessCount": 18,
+      "geminiSuccessRate": "3.6%",
+      "fallbackCount": 359,
+      "fallbackRate": "71.8%",
+      "journeyLatencies": {
+        "p50": 10367,
+        "p90": 11641,
+        "p95": 11856,
+        "p99": 12594,
+        "min": 5940,
+        "max": 13210,
+        "avg": 9964
+      },
+      "aiLatencies": {
+        "p50": 612,
+        "p90": 1379,
+        "p95": 1463,
+        "p99": 2839,
+        "min": 333,
+        "max": 4020,
+        "avg": 792
+      },
+      "lookupLatencies": {
+        "p50": 1284,
+        "p90": 2582,
+        "p95": 3867,
+        "p99": 5595,
+        "min": 454,
+        "max": 8944,
+        "avg": 1503
+      }
+    },
+    "1000": {
+      "concurrency": 1000,
+      "targetTotal": 1000,
+      "wallClockMs": 17635,
+      "throughputRps": "56.71",
+      "total": 1000,
+      "successful": 182,
+      "failed": 818,
+      "successRate": "18.2%",
+      "classification": "FAILING",
+      "statusCounts": {
+        "200": 182,
+        "client_err": 818
+      },
+      "timeoutCount": 0,
+      "count429": 0,
+      "count4xx": 0,
+      "count5xx": 0,
+      "geminiSuccessCount": 10,
+      "geminiSuccessRate": "1.0%",
+      "fallbackCount": 172,
+      "fallbackRate": "17.2%",
+      "journeyLatencies": {
+        "p50": 10578,
+        "p90": 13437,
+        "p95": 13849,
+        "p99": 16139,
+        "min": 9001,
+        "max": 17157,
+        "avg": 11064
+      },
+      "aiLatencies": {
+        "p50": 820,
+        "p90": 1360,
+        "p95": 1409,
+        "p99": 3172,
+        "min": 331,
+        "max": 4516,
+        "avg": 855
+      },
+      "lookupLatencies": {
+        "p50": 1378,
+        "p90": 3478,
+        "p95": 4737,
+        "p99": 8334,
+        "min": 445,
+        "max": 8337,
+        "avg": 1752
+      }
+    }
+  },
+  "scenarioA": {
+    "concurrency": 1000,
+    "targetTotal": 1000,
+    "wallClockMs": 17635,
+    "throughputRps": "56.71",
+    "total": 1000,
+    "successful": 182,
+    "failed": 818,
+    "successRate": "18.2%",
+    "classification": "FAILING",
+    "statusCounts": {
+      "200": 182,
+      "client_err": 818
+    },
+    "timeoutCount": 0,
+    "count429": 0,
+    "count4xx": 0,
+    "count5xx": 0,
+    "geminiSuccessCount": 10,
+    "geminiSuccessRate": "1.0%",
+    "fallbackCount": 172,
+    "fallbackRate": "17.2%",
+    "journeyLatencies": {
+      "p50": 10578,
+      "p90": 13437,
+      "p95": 13849,
+      "p99": 16139,
+      "min": 9001,
+      "max": 17157,
+      "avg": 11064
+    },
+    "aiLatencies": {
+      "p50": 820,
+      "p90": 1360,
+      "p95": 1409,
+      "p99": 3172,
+      "min": 331,
+      "max": 4516,
+      "avg": 855
+    },
+    "lookupLatencies": {
+      "p50": 1378,
+      "p90": 3478,
+      "p95": 4737,
+      "p99": 8334,
+      "min": 445,
+      "max": 8337,
+      "avg": 1752
+    }
+  },
+  "scenarioB": {
+    "concurrency": 1000,
+    "targetTotal": 1000,
+    "wallClockMs": 21843,
+    "throughputRps": "45.78",
+    "total": 1000,
+    "successful": 685,
+    "failed": 315,
+    "successRate": "68.5%",
+    "classification": "FAILING",
+    "statusCounts": {
+      "200": 696,
+      "client_err": 304
+    },
+    "timeoutCount": 0,
+    "count429": 0,
+    "count4xx": 0,
+    "count5xx": 0,
+    "geminiSuccessCount": 40,
+    "geminiSuccessRate": "4.0%",
+    "fallbackCount": 645,
+    "fallbackRate": "64.5%",
+    "journeyLatencies": {
+      "p50": 10986,
+      "p90": 16794,
+      "p95": 19146,
+      "p99": 20279,
+      "min": 5737,
+      "max": 21636,
+      "avg": 12438
+    },
+    "aiLatencies": {
+      "p50": 2618,
+      "p90": 4615,
+      "p95": 6399,
+      "p99": 9366,
+      "min": 332,
+      "max": 14320,
+      "avg": 2542
+    },
+    "lookupLatencies": {
+      "p50": 3272,
+      "p90": 7208,
+      "p95": 8954,
+      "p99": 14948,
+      "min": 709,
+      "max": 15488,
+      "avg": 3796
+    }
+  }
+}

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { generateSlug } from '../utils/slugify';
 import { saveCustomBusiness } from '../data/businesses';
+import { BUSINESS_TYPE_OPTIONS } from '../utils/businessPersonalization';
 
 export default function DevPortal() {
   const [businessName, setBusinessName] = useState('');
+  const [businessType, setBusinessType] = useState('generic');
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [activeBusiness, setActiveBusiness] = useState(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -69,7 +71,8 @@ export default function DevPortal() {
         body: JSON.stringify({
           name: trimmedName,
           slug,
-          googleReviewUrl: trimmedUrl
+          googleReviewUrl: trimmedUrl,
+          type: businessType
         })
       });
 
@@ -184,6 +187,24 @@ export default function DevPortal() {
           </div>
 
           <div className="form-group">
+            <label htmlFor="business-type" className="form-label">
+              Business Type
+            </label>
+            <select
+              id="business-type"
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value)}
+              className="form-input"
+            >
+              {BUSINESS_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="google-review-url" className="form-label">
               Google Review URL
             </label>
@@ -213,7 +234,14 @@ export default function DevPortal() {
           <div className="result-meta-header">
             <div className="result-field">
               <span className="field-label-muted">Business:</span>
-              <h2 className="result-business-name">{activeBusiness.name}</h2>
+              <h2 className="result-business-name">
+                {activeBusiness.name}
+                {activeBusiness.type && (
+                  <span className="business-type-pill" style={{ marginLeft: '10px', verticalAlign: 'middle' }}>
+                    {activeBusiness.type}
+                  </span>
+                )}
+              </h2>
             </div>
 
             <div className="result-field">

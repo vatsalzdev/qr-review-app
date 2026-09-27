@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * 5 large interactive stars designed for mobile touch.
  * Visually highlights selected stars with subtle animation.
  */
-export default function StarRating({ rating, onRatingChange, businessName }) {
+export default function StarRating({ rating, onRatingChange, businessName, promptPrefix = 'How was your experience at' }) {
   const [hovered, setHovered] = useState(0);
 
   const starLabels = [
@@ -18,7 +18,7 @@ export default function StarRating({ rating, onRatingChange, businessName }) {
   return (
     <div className="star-rating-container" role="region" aria-label="Star rating selection">
       <h2 className="rating-prompt">
-        How was your experience at{' '}
+        {promptPrefix}{' '}
         <span className="business-name-highlight">{businessName || 'our shop'}</span>?
       </h2>
 
@@ -60,15 +60,17 @@ export default function StarRating({ rating, onRatingChange, businessName }) {
         })}
       </div>
 
-      {rating > 0 && (
-        <div className="rating-caption animate-fade-in">
-          {rating === 5 && '🌟 Loved it!'}
-          {rating === 4 && '👍 Really liked it!'}
-          {rating === 3 && '🙂 Decent experience'}
-          {rating === 2 && '😐 Needs some work'}
-          {rating === 1 && '🙁 Disappointing'}
-        </div>
-      )}
+      <div className="rating-caption-slot" aria-live="polite">
+        {rating > 0 && (
+          <div key={rating} className="rating-caption animate-caption-pop">
+            {rating === 5 && '🌟 Loved it!'}
+            {rating === 4 && '👍 Really liked it!'}
+            {rating === 3 && '🙂 Decent experience'}
+            {rating === 2 && '😐 Needs some work'}
+            {rating === 1 && '🙁 Disappointing'}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

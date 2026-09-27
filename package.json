@@ -10,7 +10,7 @@
     "client": "npm --prefix client run dev",
     "dev": "concurrently \"node server/index.js\" \"npm --prefix client run dev\"",
     "build": "npm --prefix client run build",
-    "test": "node test/test-review-generator.js && node test/test-server.js",
+    "test": "node test/test-review-generator.js && node test/test-review-engine.js && node test/test-server.js && node test/test-business-personalization.js",
     "test:e2e": "node test/e2e.js",
     "postinstall": "npm --prefix client install"
   },

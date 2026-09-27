@@ -52,6 +52,39 @@ const PRESET_BUSINESSES = [
 // In-memory store fallback when MONGODB_URI is not set (e.g. offline testing/CI)
 const memoryStore = new Map(PRESET_BUSINESSES.map(b => [b.slug, { ...b }]));
 
+// High-speed, write-invalidated in-memory cache for business documents
+const BUSINESS_CACHE_TTL_MS = 60000; // 60 seconds TTL
+const businessCache = new Map(); // slug -> { doc, expiresAt }
+
+export function invalidateBusinessCache(slug) {
+  if (slug) {
+    businessCache.delete(slug.toLowerCase().trim());
+  } else {
+    businessCache.clear();
+  }
+}
+
+let indexesChecked = false;
+async function ensureIndexesAndSeed(col) {
+  if (indexesChecked || !col) return;
+  indexesChecked = true;
+  try {
+    await col.createIndex({ slug: 1 }, { unique: true });
+  } catch (idxErr) {
+    console.warn('⚠️ [Database] Index verification warning:', idxErr.message);
+  }
+
+  try {
+    const count = await col.countDocuments();
+    if (count === 0) {
+      await col.insertMany(PRESET_BUSINESSES.map(b => ({ ...b })));
+      console.log('🌱 [Database] Seeded initial businesses into MongoDB Atlas.');
+    }
+  } catch (seedErr) {
+    console.warn('⚠️ [Database] Seed verification warning:', seedErr.message);
+  }
+}
+
 /**
  * Initialize MongoDB connection using official driver if MONGODB_URI is configured.
  * Thread-safe and serverless-safe: reuses existing connection across invocations.
@@ -89,23 +122,10 @@ export async function initDb() {
       db = client.db();
       businessesCollection = db.collection('businesses');
 
-      // Create unique index on slug
-      try {
-        await businessesCollection.createIndex({ slug: 1 }, { unique: true });
-      } catch (idxErr) {
-        console.warn('⚠️ [Database] Index verification warning:', idxErr.message);
-      }
-
-      // Seed initial businesses if collection is empty
-      try {
-        const count = await businessesCollection.countDocuments();
-        if (count === 0) {
-          await businessesCollection.insertMany(PRESET_BUSINESSES.map(b => ({ ...b })));
-          console.log('🌱 [Database] Seeded initial businesses into MongoDB Atlas.');
-        }
-      } catch (seedErr) {
-        console.warn('⚠️ [Database] Seed verification warning:', seedErr.message);
-      }
+      // Trigger index and seed check in background so connection is returned immediately
+      ensureIndexesAndSeed(businessesCollection).catch(err => {
+        console.warn('⚠️ [Database] Background index/seed warning:', err.message);
+      });
 
       console.log('✅ [Database] Connected successfully to MongoDB Atlas (businesses collection ready).');
       return businessesCollection;
@@ -138,19 +158,32 @@ async function ensureDb() {
 
 /**
  * Find business document by unique slug.
+ * Optimized with projection and write-invalidated short-lived cache.
  */
 export async function getBusinessBySlug(slug) {
   if (!slug) return null;
   const cleanSlug = slug.toLowerCase().trim();
 
+  // Fast-path: Check write-invalidated in-memory cache
+  const cached = businessCache.get(cleanSlug);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.doc;
+  }
+
   await ensureDb();
 
   if (businessesCollection) {
     try {
-      const doc = await businessesCollection.findOne({ slug: cleanSlug });
+      const doc = await businessesCollection.findOne(
+        { slug: cleanSlug },
+        { projection: { _id: 0 } }
+      );
       if (doc) {
-        const { _id, ...rest } = doc;
-        return rest;
+        businessCache.set(cleanSlug, {
+          doc,
+          expiresAt: Date.now() + BUSINESS_CACHE_TTL_MS
+        });
+        return doc;
       }
       return null;
     } catch (err) {
@@ -190,13 +223,14 @@ export async function createBusiness({ name, slug, googleReviewUrl, aiContext = 
 
   await ensureDb();
 
-  if (businessesCollection) {
+    if (businessesCollection) {
     try {
       await businessesCollection.updateOne(
         { slug: cleanSlug },
         { $set: businessDoc },
         { upsert: true }
       );
+      invalidateBusinessCache(cleanSlug);
       const saved = await businessesCollection.findOne({ slug: cleanSlug });
       const { _id, ...rest } = saved || businessDoc;
       return rest;
@@ -212,6 +246,7 @@ export async function createBusiness({ name, slug, googleReviewUrl, aiContext = 
   }
 
   // Offline / test fallback ONLY when MONGODB_URI is intentionally unset
+  invalidateBusinessCache(cleanSlug);
   memoryStore.set(cleanSlug, businessDoc);
   return { ...businessDoc };
 }
@@ -236,6 +271,7 @@ export async function updateBusinessStatus(slug, status) {
         { $set: { status, updatedAt: now } },
         { returnDocument: 'after' }
       );
+      invalidateBusinessCache(cleanSlug);
       if (res) {
         const { _id, ...rest } = res;
         return rest;
@@ -251,6 +287,7 @@ export async function updateBusinessStatus(slug, status) {
     throw new Error('Database is currently unavailable. Could not update business status.');
   }
 
+  invalidateBusinessCache(cleanSlug);
   const found = memoryStore.get(cleanSlug);
   if (!found) return null;
   found.status = status;
@@ -276,6 +313,7 @@ export async function updateBusinessGoogleUrl(slug, googleReviewUrl) {
         { $set: { googleReviewUrl: googleReviewUrl.trim(), updatedAt: now } },
         { returnDocument: 'after' }
       );
+      invalidateBusinessCache(cleanSlug);
       if (res) {
         const { _id, ...rest } = res;
         return rest;
@@ -291,6 +329,7 @@ export async function updateBusinessGoogleUrl(slug, googleReviewUrl) {
     throw new Error('Database is currently unavailable. Could not update business Google URL.');
   }
 
+  invalidateBusinessCache(cleanSlug);
   const found = memoryStore.get(cleanSlug);
   if (!found) return null;
   found.googleReviewUrl = googleReviewUrl.trim();
@@ -340,6 +379,7 @@ export async function deleteBusinessBySlug(slug) {
   const cleanSlug = slug.toLowerCase().trim();
 
   await ensureDb();
+  invalidateBusinessCache(cleanSlug);
 
   if (businessesCollection) {
     try {
@@ -358,6 +398,7 @@ export async function deleteBusinessBySlug(slug) {
  * Cleanly close database connection.
  */
 export async function closeDb() {
+  invalidateBusinessCache();
   if (client) {
     await client.close();
     client = null;

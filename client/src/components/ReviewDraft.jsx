@@ -66,12 +66,14 @@ export default function ReviewDraft({
       </div>
 
       <div className="actions-container">
-        {/* Confirmation message — appears immediately above the button when clicked */}
-        {copied && (
-          <p className="copy-confirm-message" role="status" aria-live="polite">
-            Review copied — opening Google…
-          </p>
-        )}
+        {/* Zero-shift confirmation slot — maintains stable geometry */}
+        <div className="action-feedback-slot">
+          {copied && (
+            <p className="copy-confirm-message animate-feedback-in" role="status" aria-live="polite">
+              Review copied — opening Google…
+            </p>
+          )}
+        </div>
 
         {/* Primary Action Button */}
         <button
@@ -81,7 +83,9 @@ export default function ReviewDraft({
           className={`btn btn-primary-review ${copied ? 'btn-copied-state' : ''}`}
           aria-label="Copy review and open Google review page"
         >
-          <span>{copied ? '✓ Review Copied!' : 'Copy & Leave Review →'}</span>
+          <span className="btn-text-holder">
+            {copied ? '✓ Review Copied!' : 'Copy & Leave Review →'}
+          </span>
         </button>
 
         {/* Graceful clipboard failure message */}

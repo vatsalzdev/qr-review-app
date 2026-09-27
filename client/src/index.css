@@ -21,6 +21,10 @@
   --btn-google-bg: #2563eb;
   --btn-google-hover: #1d4ed8;
 
+  --biz-accent: #2563eb;
+  --biz-accent-soft: #eff6ff;
+  --biz-accent-dark: #1d4ed8;
+
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -54,6 +58,88 @@ html, body {
 }
 
 /* ==========================================================================
+   Business-Type Theming Variables (Phase 4 Subtle Personalization)
+   ========================================================================== */
+
+.theme-restaurant {
+  --biz-accent: #c2410c;
+  --biz-accent-soft: #ffedd5;
+  --biz-accent-dark: #9a3412;
+}
+
+.theme-cafe {
+  --biz-accent: #92400e;
+  --biz-accent-soft: #fef3c7;
+  --biz-accent-dark: #78350f;
+}
+
+.theme-club {
+  --biz-accent: #7c3aed;
+  --biz-accent-soft: #ede9fe;
+  --biz-accent-dark: #6d28d9;
+}
+
+.theme-bar {
+  --biz-accent: #0f766e;
+  --biz-accent-soft: #ccfbf1;
+  --biz-accent-dark: #115e59;
+}
+
+.theme-waffle_shop {
+  --biz-accent: #d97706;
+  --biz-accent-soft: #fef3c7;
+  --biz-accent-dark: #b45309;
+}
+
+.theme-gaming_zone {
+  --biz-accent: #2563eb;
+  --biz-accent-soft: #dbeafe;
+  --biz-accent-dark: #1d4ed8;
+}
+
+.theme-salon {
+  --biz-accent: #be185d;
+  --biz-accent-soft: #fce7f3;
+  --biz-accent-dark: #9d174d;
+}
+
+.theme-gift_shop {
+  --biz-accent: #0d9488;
+  --biz-accent-soft: #ccfbf1;
+  --biz-accent-dark: #0f766e;
+}
+
+.theme-optical_store {
+  --biz-accent: #0284c7;
+  --biz-accent-soft: #e0f2fe;
+  --biz-accent-dark: #0369a1;
+}
+
+.theme-real_estate {
+  --biz-accent: #1e3a8a;
+  --biz-accent-soft: #e2e8f0;
+  --biz-accent-dark: #172554;
+}
+
+.theme-swimming_pool {
+  --biz-accent: #0891b2;
+  --biz-accent-soft: #cffafe;
+  --biz-accent-dark: #0e7490;
+}
+
+.theme-grocery_store {
+  --biz-accent: #15803d;
+  --biz-accent-soft: #dcfce7;
+  --biz-accent-dark: #166534;
+}
+
+.theme-generic {
+  --biz-accent: #2563eb;
+  --biz-accent-soft: #eff6ff;
+  --biz-accent-dark: #1d4ed8;
+}
+
+/* ==========================================================================
    Mobile Canvas Layout
    ========================================================================== */
 
@@ -78,6 +164,7 @@ html, body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--biz-accent);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -137,16 +224,23 @@ html, body {
 }
 
 .shop-avatar {
-  font-size: 42px;
+  font-size: 34px;
   line-height: 1;
   margin-bottom: 10px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background-color: var(--biz-accent-soft);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   transform: scale(1);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.25s ease;
 }
 
 .shop-avatar:hover {
-  transform: scale(1.1);
+  transform: scale(1.06);
 }
 
 .shop-name {
@@ -162,12 +256,13 @@ html, body {
   align-items: center;
   font-size: 12px;
   font-weight: 600;
-  color: #2563eb;
-  background-color: #eff6ff;
+  color: var(--biz-accent);
+  background-color: var(--biz-accent-soft);
   padding: 3px 12px;
   border-radius: var(--radius-full);
   text-transform: capitalize;
   letter-spacing: 0.02em;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 /* Step Card */
@@ -219,7 +314,7 @@ html, body {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.12s ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease;
   touch-action: manipulation;
   user-select: none;
 }
@@ -241,30 +336,72 @@ html, body {
 }
 
 .star-button.selected {
-  transform: scale(1.08);
+  transform: scale(1.12);
 }
 
 .star-svg {
   width: 40px;
   height: 40px;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, fill 0.2s ease, stroke 0.2s ease;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
 }
 
+.star-button.selected .star-svg {
+  transform: scale(1.05);
+}
+
 .star-button.filled .star-svg {
-  filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));
+  filter: drop-shadow(0 2px 5px rgba(245, 158, 11, 0.35));
+}
+
+.rating-caption-slot {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
 }
 
 .rating-caption {
-  margin-top: 8px;
   font-size: 15px;
   font-weight: 600;
   color: var(--star-amber-dark);
+  line-height: 1;
+}
+
+.animate-caption-pop {
+  animation: caption-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes caption-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ==========================================================================
    2. Cinematic AI Review Generation Animation Styles
    ========================================================================== */
+
+.animate-generation-surface {
+  animation: surface-expand 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes surface-expand {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 .review-gen-animation-container {
   display: flex;
@@ -273,9 +410,11 @@ html, body {
   padding: 16px 8px;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid var(--border-subtle);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Generation Copy Header */
@@ -284,7 +423,10 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 24px;
+  min-height: 26px;
+  height: 26px;
+  overflow: hidden;
+  position: relative;
 }
 
 .gen-status-indicator {
@@ -293,7 +435,8 @@ html, body {
   border-radius: 50%;
   background-color: #3b82f6;
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
-  transition: all 0.3s ease;
+  transition: background-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
 }
 
 .gen-status-indicator.is-generating {
@@ -303,7 +446,7 @@ html, body {
 .gen-status-indicator.is-ready {
   background-color: #059669;
   box-shadow: 0 0 10px rgba(5, 150, 105, 0.7);
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 
 @keyframes pulse-indicator {
@@ -323,18 +466,19 @@ html, body {
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
+  display: inline-block;
 }
 
 .animate-copy-fade {
-  animation: copy-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: copy-slide-cross 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes copy-fade-in {
-  from {
+@keyframes copy-slide-cross {
+  0% {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(5px);
   }
-  to {
+  100% {
     opacity: 1;
     transform: translateY(0);
   }
@@ -379,13 +523,13 @@ html, body {
   flex-direction: column;
   gap: 8px;
   padding: 4px 0;
-  transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), filter 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .is-revealing .stream-rows-holder {
-  opacity: 0.12;
-  filter: blur(3px);
-  transform: scale(0.96);
+  opacity: 0.15;
+  filter: blur(2.5px);
+  transform: scale(0.97);
   pointer-events: none;
 }
 
@@ -405,7 +549,8 @@ html, body {
 }
 
 .is-revealing .card-stream-track {
-  animation-play-state: paused;
+  opacity: 0.35;
+  transition: opacity 0.4s ease;
 }
 
 @keyframes stream-row-flow {
@@ -458,10 +603,10 @@ html, body {
   width: 100%;
   max-width: 420px;
   background: #ffffff;
-  border: 1.5px solid #3b82f6;
+  border: 1.5px solid var(--biz-accent, #3b82f6);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  box-shadow: 0 8px 24px -4px rgba(59, 130, 246, 0.2), 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 25px -4px rgba(59, 130, 246, 0.22), 0 4px 12px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -478,8 +623,8 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #2563eb;
-  background: #eff6ff;
+  color: var(--biz-accent, #2563eb);
+  background: var(--biz-accent-soft, #eff6ff);
   padding: 2px 8px;
   border-radius: var(--radius-full);
 }
@@ -502,15 +647,18 @@ html, body {
 }
 
 .animate-settle-in {
-  animation: settle-card-spring 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: settle-card-spring 0.44s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes settle-card-spring {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.92);
+    transform: translateY(12px) scale(0.94);
   }
-  to {
+  65% {
+    transform: translateY(-1px) scale(1.008);
+  }
+  100% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
@@ -590,6 +738,21 @@ html, body {
 /* ==========================================================================
    3. Review Draft Styles
    ========================================================================== */
+
+.animate-draft-morph {
+  animation: draft-morph-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes draft-morph-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 .review-draft-container {
   display: flex;
@@ -733,9 +896,15 @@ html, body {
 .btn-primary-review.btn-copied-state {
   background: linear-gradient(135deg, #047857 0%, #059669 100%);
   box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
-  animation: pulse-success 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: button-pop-success 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: default;
   transform: none;
+}
+
+@keyframes button-pop-success {
+  0% { transform: scale(0.98); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
 .btn-arrow {
@@ -743,19 +912,45 @@ html, body {
   transition: transform 0.15s ease;
 }
 
-/* Confirmation message shown immediately above button after copy */
+.btn-text-holder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Zero-shift confirmation slot — maintains stable geometry above button */
+.action-feedback-slot {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Confirmation message shown inside feedback slot */
 .copy-confirm-message {
   font-size: 14px;
   font-weight: 600;
   color: #047857;
   text-align: center;
-  padding: 6px 8px 2px;
-  animation: fade-in-up 0.2s ease;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
 }
 
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+.animate-feedback-in {
+  animation: feedback-float-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes feedback-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Copy Error Banner */
